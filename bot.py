@@ -21,7 +21,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if message.content.startswith('bingus'):
+    if message.content.startswith('bingus') or message.content.startswith('Bingus') or 'bingus' in message.content:
         channel = message.channel
         await channel.send(random.choice(urls))
 

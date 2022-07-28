@@ -3,8 +3,6 @@ import random
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import asyncio
-from icrawler.builtin import GoogleImageCrawler
 import pickle
 
 

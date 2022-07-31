@@ -50,7 +50,8 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if "keito" in message.content or "Keito" in message.content:
+
+    if ("keito" in message.content or "Keito" in message.content) and ("@ItsKeito" not in message.content):
         channel = message.channel
         await channel.send(random.choice(keito))
 

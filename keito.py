@@ -51,9 +51,14 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    check = random.randint(0, 20)
+    if check == 9 and "?" in message.content:
+        channel = message.channel
+        await channel.send("Your mother")
 
     if ("keito" in message.content or "Keito" in message.content) and ("@ItsKeito" not in message.content):
         channel = message.channel
         await channel.send(random.choice(keito))
+
 
 client.run(TOKEN)

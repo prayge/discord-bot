@@ -40,7 +40,9 @@ keito = [
     "https://cdn.discordapp.com/attachments/929078295327285308/1003235340905086976/keito.jpg",
     "Forgor 💀",
     "E-E-E-E-E-E-E-E-E-",
-    "Relax!"
+    "Relax!",
+    "Ba-boom",
+    "Farting on my roommates door"
 ]
 
 

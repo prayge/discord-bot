@@ -36,7 +36,8 @@ keito = [
     "https://cdn.discordapp.com/attachments/896806359075536987/1002397109498155028/unknown.png",
     "https://cdn.discordapp.com/attachments/896806359075536987/1002397140003332187/unknown.png",
     "https://cdn.discordapp.com/attachments/896806359075536987/1002397171062165564/unknown.png",
-    "https://cdn.discordapp.com/attachments/896806359075536987/1002397193434562560/unknown.png"
+    "https://cdn.discordapp.com/attachments/896806359075536987/1002397193434562560/unknown.png",
+    "https://cdn.discordapp.com/attachments/929078295327285308/1003235340905086976/keito.jpg"
 
 ]
 

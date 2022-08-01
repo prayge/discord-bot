@@ -3,11 +3,14 @@ import random
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+import pickle
+
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-client = discord.Client()
+bot = commands.Bot(command_prefix='$')
+
 keito = [
     "Man fuck you I'll see you at work",
     "Your mother",
@@ -47,30 +50,42 @@ keito = [
 ]
 
 
-@client.event
+@bot.event
 async def on_ready():
     print("keitobot Online")
 
 
-@client.event
-async def on_message(message):
+@bot.listen('on_message')
+async def sus(message):
     check = random.randint(0, 20)
     if (check == 9 and "?" in message.content) and ("http" not in message.content) and ("keito" not in message.content):
         channel = message.channel
         await channel.send("Your mother")
 
-    if ("keito" in message.content or "Keito" in message.content) and ("@ItsKeito" not in message.content):
-        channel = message.channel
-        await channel.send(random.choice(keito))
+    if ("keito" in message.content or "Keito" in message.content) and ("@ItsKeito" not in message.content) and (message.author != bot.user):
+        try:
 
-    await bot.process_commands(message)
-
-
-bot = commands.Bot(command_prefix='$')
+            with open('test', 'rb') as f:
+                keito_list = pickle.load(f)
+            channel = message.channel
+            await channel.send(random.choice(keito_list))
+        except:
+            channel = message.channel
+            await channel.send(random.choice(keito))
 
 
 @bot.command()
-async def test(ctx, arg):
-    await ctx.send(arg)
+async def add(ctx, *, message: str):
+    keito.append(message)
+    with open('test', 'wb') as f:
+        pickle.dump(keito, f)
+    await ctx.send(f"{message} Added to keitobot. P.S. keito is a cutie ")
 
-client.run(TOKEN)
+
+@bot.command()
+@commands.is_owner()
+async def shutdown(ctx):
+    with open('test', 'wb') as f:
+        pickle.dump(keito, f)
+
+bot.run(TOKEN)

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+
 client = discord.Client()
 keito = [
     "Man fuck you I'll see you at work",
@@ -54,7 +55,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
     check = random.randint(0, 20)
-    if check == 9 and "?" in message.content:
+    if (check == 9 and "?" in message.content) and ("http" not in message.content) and ("keito" not in message.content):
         channel = message.channel
         await channel.send("Your mother")
 
@@ -62,5 +63,14 @@ async def on_message(message):
         channel = message.channel
         await channel.send(random.choice(keito))
 
+    await bot.process_commands(message)
+
+
+bot = commands.Bot(command_prefix='$')
+
+
+@bot.command()
+async def test(ctx, arg):
+    await ctx.send(arg)
 
 client.run(TOKEN)

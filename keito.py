@@ -51,6 +51,7 @@ async def sus(message):
     print(f"message.content:  {message.content}")
     print(f"message.embeds:  {message.embeds}")
     print(f"message.author.bot: {message.author.bot}")
+    print(f"message.is_system(): {message.is_system()}")
 
     check = random.randint(0, 20)
     channel = message.channel

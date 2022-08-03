@@ -56,35 +56,28 @@ async def sus(message):
     check = random.randint(0, 20)
     channel = message.channel
 
-    if message.author.bot == True or message.author == bot.user:
+    if (check == 9 and "?" in message.content) and ("http" not in message.content) and (message.author.bot == True and message.embeds == True):
+        await channel.send("Your mother")
 
-        print(bot.user)
-        print(f"im a bot")
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    if ("keito" in message.content.lower()) and ("@ItsKeito" not in message.content) and (message.author.bot == True and message.embeds == True):
+        query = "Keito"
+        phrase = print_msg(channel, query)
+        print(phrase)
+        await channel.send(f"{phrase['phrase']}")
 
-    else:
-        if (check == 9 and "?" in message.content) and ("http" not in message.content) and ("keito" not in message.content):
-            await channel.send("Your mother")
+    if ("ethan" in message.content.lower()) and ("@Mordingo" not in message.content) and (message.author.bot == True and message.embeds == True):
 
-        if ("keito" in message.content.lower()) and ("@ItsKeito" not in message.content):
-            query = "Keito"
-            phrase = print_msg(channel, query)
-            print(phrase)
-            await channel.send(f"{phrase['phrase']}")
+        query = "Ethan"
+        phrase = print_msg(channel, query)
+        await channel.send(f"{phrase['phrase']}")
 
-        if ("ethan" in message.content.lower()) and ("@Mordingo" not in message.content):
+    if ("jongtee" in message.content.lower()) and ("@Jongtee" not in message.content) and (message.author.bot == True and message.embeds == True):
+        query = "Patryk"
+        phrase = print_msg(channel, query)
+        await channel.send(f"{phrase['phrase']}")
 
-            query = "Ethan"
-            phrase = print_msg(channel, query)
-            await channel.send(f"{phrase['phrase']}")
-
-        if ("jongtee" in message.content.lower()) and ("@Jongtee" not in message.content):
-            query = "Patryk"
-            phrase = print_msg(channel, query)
-            await channel.send(f"{phrase['phrase']}")
-
-        if("collector" in message.content):
-            await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
+    if("collector" in message.content):
+        await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
 
 
 @bot.command()

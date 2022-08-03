@@ -1,15 +1,4 @@
-import os
-import random
-import discord
-from discord.ext import commands
-from dotenv import load_dotenv
-import pickle
-
-
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-bot = commands.Bot(command_prefix='$')
+import pandas as pd
 
 keito = [
     "Man fuck you I'll see you at work",
@@ -49,39 +38,5 @@ keito = [
     "Farting on my roommates door"
 ]
 
-
-@bot.event
-async def on_ready():
-    print("keitobot Online")
-
-
-@bot.listen('on_message')
-async def sus(message):
-    check = random.randint(0, 20)
-    if (check == 9 and "?" in message.content) and ("http" not in message.content) and ("keito" not in message.content):
-        channel = message.channel
-        await channel.send("Your mother")
-
-    if ("keito" in message.content or "Keito" in message.content) and ("@ItsKeito" not in message.content) and (message.author != bot.user):
-        try:
-
-            with open('test', 'rb') as f:
-                keito_list = pickle.load(f)
-            channel = message.channel
-            await channel.send(random.choice(keito_list))
-        except:
-            channel = message.channel
-            await channel.send(random.choice(keito))
-
-
-@bot.command()
-async def add(ctx, *, message: str):
-    keito.append(message)
-    with open('test', 'wb') as f:
-        pickle.dump(keito, f)
-    await ctx.send(f"{message} Added to keitobot. P.S. keito is a cutie ")
-
-
-
-
-bot.run(TOKEN)
+df = pd.DataFrame(keito)
+df.to_csv('phrases.csv', index=False)

@@ -48,21 +48,20 @@ async def on_ready():
 
 async def condition(message, name):
     channel = message.channel
-    print("a")
-    if (name.lower() in message.content.lower()):
+    if (name.lower() in message.content.lower()) and (message.embeds == False):
         query = name
         phrase = print_msg(channel, query)
-        print("sendfing")
         await channel.send(f"{phrase['phrase']}")
 
 
 @bot.listen('on_message')
 async def sus(message):
+    print("\n ----------------------------------------------------------------")
     print(f"message.author: {message.author}")
     print(f"message.content:  {message.content}")
     print(f"message.embeds:  {message.embeds}")
     print(f"message.author.bot: {message.author.bot}")
-    print(f"message.is_system(): {message.is_system()}")
+    print("\n ----------------------------------------------------------------")
 
     check = random.randint(0, 20)
     channel = message.channel
@@ -71,22 +70,9 @@ async def sus(message):
         await channel.send("Your mother")
 
     await condition(message, "Sam")
-
-    if ("keito" in message.content.lower()) and ("@ItsKeito" not in message.content):
-        query = "Keito"
-        phrase = print_msg(channel, query)
-        await channel.send(f"{phrase['phrase']}")
-
-    if ("ethan" in message.content.lower()) and ("@Mordingo" not in message.content):
-
-        query = "Ethan"
-        phrase = print_msg(channel, query)
-        await channel.send(f"{phrase['phrase']}")
-
-    if ("jongtee" in message.content.lower()) and ("@Jongtee" not in message.content):
-        query = "Patryk"
-        phrase = print_msg(channel, query)
-        await channel.send(f"{phrase['phrase']}")
+    await condition(message, "Keito")
+    await condition(message, "Patryk")
+    await condition(message, "Ethan")
 
     if("collector" in message.content):
         await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
@@ -94,7 +80,6 @@ async def sus(message):
 
 @bot.command()
 async def add(ctx, *, message: str):
-    print(message)
     phrase_num = message.find("!p")
     user_num = message.find("!u")
 

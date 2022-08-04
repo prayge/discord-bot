@@ -1,6 +1,7 @@
 from __future__ import nested_scopes
 from discord.ext import commands
 from dotenv import load_dotenv
+import asyncio
 import os
 import random
 import discord
@@ -45,6 +46,16 @@ async def on_ready():
     print("keitobot Online")
 
 
+async def condition(message, name):
+    channel = message.channel
+    print("a")
+    if (name.lower() in message.content.lower()):
+        query = name
+        phrase = print_msg(channel, query)
+        print("sendfing")
+        await channel.send(f"{phrase['phrase']}")
+
+
 @bot.listen('on_message')
 async def sus(message):
     print(f"message.author: {message.author}")
@@ -56,22 +67,23 @@ async def sus(message):
     check = random.randint(0, 20)
     channel = message.channel
 
-    if (check == 9 and "?" in message.content) and ("http" not in message.content) and (message.author.bot == True and message.embeds == True):
+    if (check == 9 and "?" in message.content) and ("http" not in message.content):
         await channel.send("Your mother")
 
-    if ("keito" in message.content.lower()) and ("@ItsKeito" not in message.content) and (message.author.bot == True and message.embeds == True):
+    await condition(message, "Sam")
+
+    if ("keito" in message.content.lower()) and ("@ItsKeito" not in message.content):
         query = "Keito"
         phrase = print_msg(channel, query)
-        print(phrase)
         await channel.send(f"{phrase['phrase']}")
 
-    if ("ethan" in message.content.lower()) and ("@Mordingo" not in message.content) and (message.author.bot == True and message.embeds == True):
+    if ("ethan" in message.content.lower()) and ("@Mordingo" not in message.content):
 
         query = "Ethan"
         phrase = print_msg(channel, query)
         await channel.send(f"{phrase['phrase']}")
 
-    if ("jongtee" in message.content.lower()) and ("@Jongtee" not in message.content) and (message.author.bot == True and message.embeds == True):
+    if ("jongtee" in message.content.lower()) and ("@Jongtee" not in message.content):
         query = "Patryk"
         phrase = print_msg(channel, query)
         await channel.send(f"{phrase['phrase']}")

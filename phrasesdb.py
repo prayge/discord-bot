@@ -73,15 +73,22 @@ except:
 #     print("I can't drop !")
 # connection.commit()
 
-only_ethan = pd.read_sql(
-    "select * from phrases where username = 'Keito'", connection)
-list_df = only_ethan.to_dict('list')
-list_phrases = list_df["phrase"]
-new_l = []
+# only_ethan = pd.read_sql(
+#     "select * from phrases where username = 'Keito'", connection)
+# list_df = only_ethan.to_dict('list')
+# list_phrases = list_df["phrase"]
+# new_l = []
 
-for i, p in enumerate(list_phrases):
-    if "https" not in p:
-        new_l.append(p)
-        
-phrases_test = '\n'.join(new_l)
-print(phrases_test)
+# for i, p in enumerate(list_phrases):
+#     if "https" not in p:
+#         new_l.append(p)
+
+# phrases_test = '\n'.join(new_l)
+# print(phrases_test)
+
+
+only_ethan = pd.read_sql(
+    "select distinct username from phrases", connection)
+list_df = only_ethan.to_dict('list')
+for x in list_df["username"]:
+    print(x)

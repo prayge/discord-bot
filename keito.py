@@ -8,7 +8,9 @@ import discord
 import pickle
 import psycopg2 as pg
 import pandas as pd
+import time
 
+start = time.time()
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -23,7 +25,8 @@ try:
         database=DATABASE,
         user=USER,
         password=PASSWORD)
-    print("Connected to database")
+    timelapse = time.time()
+    print(f"Connected to database - took {timelapse-start} seconds")
 except:
     print('Can not access database')
 
@@ -31,37 +34,14 @@ bot = commands.Bot(command_prefix='$')
 cursor = connection.cursor()
 
 
-def print_msg(channel, query):
-    df_dict = pd.read_sql(
-        f"select * from phrases where username = '{query}'", connection)
-
-    json_print = df_dict.to_dict(orient='records')
-    randint = random.randint(0, len(json_print)-1)
-    phrase = json_print[randint]
-    return phrase
-
-
 @bot.event
 async def on_ready():
-    print("keitobot Online")
-
-
-async def condition(message, name):
-    channel = message.channel
-    if (name.lower() in message.content.lower()) and (message.embeds == False):
-        query = name
-        phrase = print_msg(channel, query)
-        await channel.send(f"{phrase['phrase']}")
+    timelapse = time.time()
+    print(f"keitobot Online - took {timelapse-start} seconds")
 
 
 @bot.listen('on_message')
 async def sus(message):
-    print("\n ----------------------------------------------------------------")
-    print(f"message.author: {message.author}")
-    print(f"message.content:  {message.content}")
-    print(f"message.embeds:  {message.embeds}")
-    print(f"message.author.bot: {message.author.bot}")
-    print("\n ----------------------------------------------------------------")
 
     check = random.randint(0, 20)
     channel = message.channel
@@ -69,27 +49,46 @@ async def sus(message):
     if (check == 9 and "?" in message.content) and ("http" not in message.content):
         await channel.send("Your mother")
 
-    await condition(message, "Sam")
-    await condition(message, "Keito")
-    await condition(message, "Patryk")
-    await condition(message, "Ethan")
-
     if("collector" in message.content):
         await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
 
 
 @bot.command()
-async def add(ctx, *, message: str):
-    phrase_num = message.find("!p")
-    user_num = message.find("!u")
+async def quote(ctx, *, message: str):
+    query = message
+    only_ethan = pd.read_sql(
+        "select distinct username from phrases", connection)
+    list_df = only_ethan.to_dict('list')
+    list_usernames = list_df["username"]
+    usernames = ", ".join(list_usernames)
+    if query in list_usernames:
+        print("Works for this username")
+        df_dict = pd.read_sql(
+            f"select * from phrases where username = '{query}'", connection)
+        json_print = df_dict.to_dict(orient='records')
+        randint = random.randint(0, len(json_print)-1)
+        phrase = json_print[randint]
+        await ctx.send(f"{phrase['phrase']}")
+    else:
+        await ctx.send(f"{query} is not in list of usernames. the current list is {usernames}")
 
-    phrase = message[phrase_num+2:user_num].strip()
-    user = message[user_num+2:len(message)].strip()
-    cursor.execute(
-        f"INSERT INTO phrases(phrase, username) VALUES('{phrase}', '{user}')")
-    await ctx.send(f"Added phrase: {phrase} and username: {user} to database")
-    connection.commit()
-    print(f"added to db phrase: {phrase} and user: {user} ")
+
+@bot.command()
+async def add(ctx, *, message: str):
+    try:
+        phrase_index = message.index("!p")
+        user_index = message.index("!u")
+        print(phrase_index, user_index)
+
+        phrase = message[phrase_index+2:user_index].strip()
+        user = message[user_index+2:len(message)].strip()
+        # cursor.execute(
+        #     f"INSERT INTO phrases(phrase, username) VALUES('{phrase}', '{user}')")
+        await ctx.send(f"Added phrase: {phrase} and username: {user} to database")
+        connection.commit()
+        print(f"added to db phrase: {phrase} and user: {user} ")
+    except:
+        await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
 
 @bot.command()

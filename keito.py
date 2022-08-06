@@ -1,6 +1,6 @@
 from __future__ import nested_scopes
 from ast import alias
-from discord.ext import commands
+from discord.ext import commands, menus
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -35,23 +35,23 @@ bot = commands.Bot(command_prefix='$')
 cursor = connection.cursor()
 
 
+class MySource(menus.ListPageSource):
+    async def format_page(self, menu, entries):
+        return f"This is number {entries}."
+
+
+@bot.command()
+async def test(ctx):
+    data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    formatter = MySource(data, per_page=1)
+    menu = menus.MenuPages(formatter)
+    await menu.start(ctx)
+
+
 @bot.event
 async def on_ready():
     timelapse = time.time()
     print(f"keitobot Online - took {timelapse-start} seconds")
-
-
-@bot.listen('on_message')
-async def sus(message):
-
-    check = random.randint(0, 20)
-    channel = message.channel
-
-    if (check == 9 and "?" in message.content) and ("http" not in message.content):
-        await channel.send("Your mother")
-
-    if("collector" in message.content):
-        await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
 
 
 @bot.command(name="quote", alias='q')

@@ -54,7 +54,7 @@ async def sus(message):
         await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
 
 
-@bot.command(alias='q')
+@bot.command(name="quote", alias='q')
 async def quote(ctx, *, message: str):
     query = message
     users = pd.read_sql(
@@ -74,7 +74,7 @@ async def quote(ctx, *, message: str):
         await ctx.send(f"{query} is not in list of usernames. the current list is {usernames}")
 
 
-@bot.command(alias='a')
+@bot.command(name="add", alias='a')
 async def add(ctx, *, message: str):
     try:
         phrase_index = message.index("!p")
@@ -92,7 +92,7 @@ async def add(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
 
-@bot.command(alias='d')
+@bot.command(name="delete", alias='d')
 async def delete(ctx, *, message: str):
     try:
         id_index = message.index("!id")
@@ -120,28 +120,36 @@ async def delete(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$delete !id <id> ")
 
 
-@bot.command(alias='l')
+@bot.command(name="list", alias='l')
 async def list(ctx, *, message: str):
-    try:
-        only_ethan = pd.read_sql(
-            f"select * from phrases where username = '{message}'", connection)
-        list_df = only_ethan.to_dict('list')
-        list_phrases = list_df["phrase"]
-        new_l = []
 
-        for i, p in enumerate(list_phrases):
-            if "https" not in p:
-                new_l.append(p)
+    users = pd.read_sql(
+        "select distinct username from phrases", connection)
+    list_df = users.to_dict('list')
+    list_usernames = list_df["username"]
+    if message.strip() in list_usernames:
+        print("Works for this username")
+        try:
+            list_df = pd.read_sql(
+                f"select * from phrases where username = '{message}'", connection)
+            print(list_df)
+            listlist = list_df.values.tolist()
+            [print(f"id: {e[2]}, phrase: {e[0]}") for e in listlist]
+            table = (
+                "\n".join(f"ID: {elem[2]} Phrase: {elem[0]}" for elem in listlist))
+            print(table)
+            embed = discord.Embed(title="Phrases",
+                                  description=f"All the phrases said by {message}")
+            embed.add_field(
+                name=f"Phrases", value=table)
+            await ctx.send(embed=embed)
 
-        phrases_test = '\n'.join(new_l)
-        embed = discord.Embed(title="Phrases",
-                              description=f"All the phrases said by {message}")
-        embed.add_field(
-            name=f"Phrases", value=phrases_test)
-        await ctx.send(embed=embed)
+        except:
+            print(message)
+            await ctx.send("Username doesnt exist, did you type it correctly? Make sure the Name is spelled correctly and has a Capital Letter. ex. 'Keito' ")
+    else:
+        await ctx.send(f"Username {message} not in list of usernames")
+        print(f"Username {message} not in list of usernames")
 
-    except:
-        print(message)
-        await ctx.send("Username doesnt exist, did you type it correctly? Make sure the Name is spelled correctly and has a Capital Letter. ex. 'Keito' ")
 
 bot.run(TOKEN)

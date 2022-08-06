@@ -86,12 +86,10 @@ except:
 # phrases_test = '\n'.join(new_l)
 # print(phrases_test)
 
+list_df = pd.read_sql(
+    f"select * from phrases where username = 'Ethan'", connection)
 
-ids_df = pd.read_sql(
-    "select distinct id from phrases", connection)
-id_list = ids_df.to_dict('list')
-ids = id_list["id"]
-sorted_ids = sorted(ids, key=int)
-
-for x in sorted_ids:
-    print(x)
+listlist = list_df.values.tolist()
+for e in listlist:
+    print(e)
+    print(f"id {e[2]} phrase: {e[0]} ")

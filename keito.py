@@ -1,4 +1,5 @@
 from __future__ import nested_scopes
+from ast import alias
 from discord.ext import commands
 from dotenv import load_dotenv
 import asyncio
@@ -53,12 +54,12 @@ async def sus(message):
         await channel.send("https://cdn.discordapp.com/attachments/815190898052300821/909895376167907358/unknown.png")
 
 
-@bot.command()
+@bot.command(alias='q')
 async def quote(ctx, *, message: str):
     query = message
-    only_ethan = pd.read_sql(
+    users = pd.read_sql(
         "select distinct username from phrases", connection)
-    list_df = only_ethan.to_dict('list')
+    list_df = users.to_dict('list')
     list_usernames = list_df["username"]
     usernames = ", ".join(list_usernames)
     if query in list_usernames:
@@ -73,7 +74,7 @@ async def quote(ctx, *, message: str):
         await ctx.send(f"{query} is not in list of usernames. the current list is {usernames}")
 
 
-@bot.command()
+@bot.command(alias='a')
 async def add(ctx, *, message: str):
     try:
         phrase_index = message.index("!p")
@@ -91,7 +92,35 @@ async def add(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
 
-@bot.command()
+@bot.command(alias='d')
+async def delete(ctx, *, message: str):
+    try:
+        id_index = message.index("!id")
+        id = message[id_index+3:].strip()
+        print(id)
+
+        ids_df = pd.read_sql(
+            "select distinct id from phrases", connection)
+        id_list = ids_df.to_dict('list')
+        ids = id_list["id"]
+        sorted_ids = sorted(ids, key=int)
+        [print(x) for x in sorted_ids]
+
+        if sorted_ids.__contains__(int(id)):
+            print(f"{id} is in database")
+            # cursor.execute(
+            # f"DELETE FROM phrases where id = {id}")
+            await ctx.send(f"Deleted {id} in database")
+        else:
+            await ctx.send(f"{id} doesnt exist in database, try again.")
+            print(f"{id} not in database")
+
+        connection.commit()
+    except:
+        await ctx.send("Add command formated incorrectly. please use '$delete !id <id> ")
+
+
+@bot.command(alias='l')
 async def list(ctx, *, message: str):
     try:
         only_ethan = pd.read_sql(
@@ -106,7 +135,7 @@ async def list(ctx, *, message: str):
 
         phrases_test = '\n'.join(new_l)
         embed = discord.Embed(title="Phrases",
-                              description=f"All the phrases said by {message}")  # ,color=Hex code
+                              description=f"All the phrases said by {message}")
         embed.add_field(
             name=f"Phrases", value=phrases_test)
         await ctx.send(embed=embed)

@@ -85,6 +85,8 @@ async def add(ctx, *, message: str):
         user = message[user_index+2:len(message)].strip()
         # cursor.execute(
         #     f"INSERT INTO phrases(phrase, username) VALUES('{phrase}', '{user}')")
+
+        # add button to accept add
         await ctx.send(f"Added phrase: {phrase} and username: {user} to database")
         connection.commit()
         print(f"added to db phrase: {phrase} and user: {user} ")
@@ -96,60 +98,91 @@ async def add(ctx, *, message: str):
 async def delete(ctx, *, message: str):
     try:
         id_index = message.index("!id")
-        id = message[id_index+3:].strip()
+        id = int(message[id_index+3:].strip())
         print(id)
 
         ids_df = pd.read_sql(
-            "select distinct id from phrases", connection)
+            "select id, phrase from phrases", connection)
+        phrase_select = pd.read_sql(
+            f"select phrase from phrases where id = {id}", connection)
+        phrase_string = phrase_select.to_dict('list')
+        phrase = "".join(phrase_string["phrase"])
         id_list = ids_df.to_dict('list')
         ids = id_list["id"]
         sorted_ids = sorted(ids, key=int)
-        [print(x) for x in sorted_ids]
-
-        if sorted_ids.__contains__(int(id)):
+        if sorted_ids.__contains__(id):
             print(f"{id} is in database")
+            await ctx.send(f"Deleted {id}, which has phrase: {phrase} in database")
             # cursor.execute(
             # f"DELETE FROM phrases where id = {id}")
-            await ctx.send(f"Deleted {id} in database")
+
+            # add button to accept delete
         else:
             await ctx.send(f"{id} doesnt exist in database, try again.")
             print(f"{id} not in database")
 
         connection.commit()
     except:
-        await ctx.send("Add command formated incorrectly. please use '$delete !id <id> ")
+        await ctx.send("Add command formated incorrectly. please use '$delete !id <INTEGER> ")
 
 
-@bot.command(name="list", alias='l')
-async def list(ctx, *, message: str):
+@bot.command(name="list", alias='tl')
+async def list(ctx, message: str):
 
     users = pd.read_sql(
         "select distinct username from phrases", connection)
     list_df = users.to_dict('list')
     list_usernames = list_df["username"]
+    buttons = [u"\u25C0", u"\u25B6"]
     if message.strip() in list_usernames:
-        print("Works for this username")
         try:
             list_df = pd.read_sql(
                 f"select * from phrases where username = '{message}'", connection)
-            print(list_df)
             listlist = list_df.values.tolist()
-            [print(f"id: {e[2]}, phrase: {e[0]}") for e in listlist]
+            ll = []
+            for elem in listlist:
+                if "https" not in elem[0]:
+                    ll.append(elem)
+                else:
+                    print("http found")
+
             table = (
-                "\n".join(f"ID: {elem[2]} Phrase: {elem[0]}" for elem in listlist))
-            print(table)
+                "\n".join(f"ID: {elem[2]} Phrase: {elem[0]}" for elem in ll))
+
             embed = discord.Embed(title="Phrases",
                                   description=f"All the phrases said by {message}")
             embed.add_field(
                 name=f"Phrases", value=table)
-            await ctx.send(embed=embed)
+            msg = await ctx.send(embed=embed)
+            for button in buttons:
+                await msg.add_reaction(button)
 
         except:
-            print(message)
-            await ctx.send("Username doesnt exist, did you type it correctly? Make sure the Name is spelled correctly and has a Capital Letter. ex. 'Keito' ")
+            await ctx.send("Username doesnt exist, did you type it correctly? check current list of users with '$users' ")
     else:
         await ctx.send(f"Username {message} not in list of usernames")
-        print(f"Username {message} not in list of usernames")
 
+
+@bot.command(name="users", alias='u')
+async def users(ctx):
+    users_df = pd.read_sql(
+        "select distinct username from phrases", connection)
+    list_df = users_df.to_dict('list')
+    list_usernames = list_df["username"]
+    usernames = ", \n".join(list_usernames)
+    embed = discord.Embed(title="Users",
+                          description=f"All the users in Database")
+    embed.add_field(
+        name=f"Users", value=usernames)
+    await ctx.send(embed=embed)
+
+
+@quote.error
+@add.error
+@delete.error
+@list.error
+async def send_error(ctx, error):
+    print(type(error))
+    await ctx.send(error)
 
 bot.run(TOKEN)

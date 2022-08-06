@@ -87,9 +87,9 @@ except:
 # print(phrases_test)
 
 list_df = pd.read_sql(
-    f"select * from phrases where username = 'Ethan'", connection)
+    f"select * from phrases ", connection)
 
 listlist = list_df.values.tolist()
+print(len(listlist))
 for e in listlist:
     print(e)
-    print(f"id {e[2]} phrase: {e[0]} ")

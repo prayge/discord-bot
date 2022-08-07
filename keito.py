@@ -37,12 +37,20 @@ cursor = connection.cursor()
 
 
 class PaginationListPhrases(menus.ListPageSource):
-    def __init__(self, data):
+    def __init__(self, data, username):
         super().__init__(data, per_page=10)
+        self.username = username
 
-    async def format_page(self, menu, entries):
+    async def format_page(self, menu, phrases):
+
+        embed = discord.Embed(title=f"{self.username}'s Phrases",
+                              description=f"All the phrases said by this loser")
         offset = menu.current_page * self.per_page
-        return '\n'.join(f'{i}. {v}' for i, v in enumerate(entries, start=offset))
+        lines = '\n'.join(f'ID: {elem[2]}, {elem[0]}' for _,
+                          elem in enumerate(phrases, start=offset))
+        embed.add_field(
+            name=f"Phrases", value=lines)
+        return embed
 
 
 class MyMenuPages(menus.MenuPages, inherit_buttons=False):
@@ -145,22 +153,16 @@ async def test(ctx, message: str):
             list_df = pd.read_sql(
                 f"select * from phrases where username = '{message}'", connection)
             listlist = list_df.values.tolist()
-            ll = []
+            no_links = []
+            links = []
             for elem in listlist:
                 if "https" not in elem[0]:
-                    ll.append(elem)
+                    no_links.append(elem)
                 else:
-                    print("http found")
+                    links.append(elem)
 
-            table = (
-                "\n".join(f"ID: {elem[2]} Phrase: {elem[0]}" for elem in ll))
-
-            embed = discord.Embed(title="Phrases",
-                                  description=f"All the phrases said by {message}")
-            embed.add_field(
-                name=f"Phrases", value=table)
             pages = MyMenuPages(source=PaginationListPhrases(
-                ll), clear_reactions_after=True)
+                no_links, message), clear_reactions_after=True)
             await pages.start(ctx)
 
         except:

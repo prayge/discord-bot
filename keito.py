@@ -76,6 +76,30 @@ class MyMenuPages(menus.MenuPages, inherit_buttons=False):
         await self.show_checked_page(self.current_page + 1)
 
 
+class Confirm(menus.Menu):
+    def __init__(self, msg):
+        super().__init__(timeout=30.0, delete_message_after=True)
+        self.msg = msg
+        self.result = None
+
+    async def send_initial_message(self, ctx, channel):
+        return await channel.send(self.msg)
+
+    @menus.button('\N{WHITE HEAVY CHECK MARK}')
+    async def do_confirm(self, payload):
+        self.result = True
+        self.stop()
+
+    @menus.button('\N{CROSS MARK}')
+    async def do_deny(self, payload):
+        self.result = False
+        self.stop()
+
+    async def prompt(self, ctx):
+        await self.start(ctx, wait=True)
+        return self.result
+
+
 @ bot.event
 async def on_ready():
     timelapse = time.time()
@@ -124,8 +148,16 @@ async def add(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
 
+@ bot.command(name="dd", alias='d')
+async def dd(ctx):
+    confirm = await Confirm('Delete everything?').prompt(ctx)
+    if confirm:
+        await ctx.send('deleted...')
+
+
 @ bot.command(name="delete", alias='d')
 async def delete(ctx, *, message: str):
+
     try:
         id_index = message.index("!id")
         id = int(message[id_index+3:].strip())
@@ -141,16 +173,17 @@ async def delete(ctx, *, message: str):
         ids = id_list["id"]
         sorted_ids = sorted(ids, key=int)
 
-        if sorted_ids.__contains__(id):
-            print(f"{id} is in database")
-            await ctx.send(f"Deleted {id}, which has phrase: {phrase} in database")
-            cursor.execute(
-                f"DELETE FROM phrases where id = {id}")
-
-            # add button to accept delete
-        else:
-            await ctx.send(f"{id} doesnt exist in database, try again.")
-            print(f"{id} not in database")
+        confirm = await Confirm(f'Delete phrase: {phrase}?').prompt(ctx)
+        if confirm:
+            if sorted_ids.__contains__(id):
+                print(f"{id} is in database")
+                await ctx.send(f"Deleted {id}, which has phrase: {phrase} in database")
+                cursor.execute(
+                    f"DELETE FROM phrases where id = {id}")
+                print(f"deleted  {phrase} @ id {id}")
+            else:
+                await ctx.send(f"{id} doesnt exist in database, try again.")
+                print(f"{id} not in database")
 
         connection.commit()
     except:

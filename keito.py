@@ -1,4 +1,7 @@
 from __future__ import nested_scopes
+import sys
+from io import BytesIO
+import requests
 from ast import alias
 from discord.ext import commands, menus
 from discord.ext.menus import button, First, Last
@@ -11,6 +14,9 @@ import pickle
 import psycopg2 as pg
 import pandas as pd
 import time
+from PIL import Image, ImageFont, ImageDraw
+import io
+
 
 start = time.time()
 
@@ -60,7 +66,7 @@ class ImageListPagination(menus.ListPageSource):
     async def format_page(self, menu, image):
         embed = discord.Embed(title="Images",
                               description=f"Images of loser")
-
+        embed.add_field(name=f"id", value=image)
         offset = menu.current_page * self.per_page
         embed.set_image(url=image)
         return embed
@@ -149,13 +155,6 @@ async def add(ctx, *, message: str):
         print(f"added to db phrase: {phrase} and user: {user} ")
     except:
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
-
-
-@ bot.command(name="dd", alias='d')
-async def dd(ctx):
-    confirm = await Confirm('Delete everything?').prompt(ctx)
-    if confirm:
-        await ctx.send('deleted...')
 
 
 @ bot.command(name="delete", alias='d')
@@ -286,10 +285,44 @@ async def images(ctx, message: str):
         ctx.send("User doesn't have any images")
 
 
+@ bot.command(name="draw", alias='d')
+async def draw(ctx, message: str):
+    if "http" in message:
+        try:
+            print(message)
+            url = message
+            response = requests.get(url)
+
+            with Image.open(BytesIO(response.content)) as im:
+
+                fnt = ImageFont.truetype("impact.ttf", 75)
+                # get a drawing context
+                d = ImageDraw.Draw(im)
+                w, h = im.size
+
+                # draw multiline text
+                d.text(xy=(w/2, 10), text="TOP TEXT", font=fnt,
+                       fill="white", stroke_fill="black", anchor="mt", stroke_width=2)
+
+                d.text(xy=(w/2, h-10), text="BOTTOM TEXT", font=fnt,
+                       fill="white", stroke_fill="black", anchor="ms", stroke_width=2)
+                print("saving")
+                im.save("test.png")
+
+                await ctx.send(file=discord.File('test.png'))
+        except:
+            ctx.send("Invalid image, please try again")
+    else:
+        ctx.send("Not an image")
+
+
+@ draw.error
 @ quote.error
 @ add.error
 @ delete.error
 @ list.error
+@ images.error
+@ users.error
 async def send_error(ctx, error):
     print(type(error))
     await ctx.send(error)

@@ -53,24 +53,40 @@ class PaginationListPhrases(menus.ListPageSource):
         return embed
 
 
+class ImageListPagination(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=1)
+
+    async def format_page(self, menu, image):
+        embed = discord.Embed(title="Images",
+                              description=f"Images of loser")
+
+        offset = menu.current_page * self.per_page
+        embed.set_image(url=image)
+        return embed
+
+
 class MyMenuPages(menus.MenuPages, inherit_buttons=False):
-    @button('\u2B05\uFE0F', position=First(1))
+    @ button('\u2B05\uFE0F', position=First(1))
     async def go_to_previous_page(self, payload):
         await self.show_checked_page(self.current_page - 1)
 
-    @button('\u27A1\uFE0F', position=Last(1))
+    @ button('\u27A1\uFE0F', position=Last(1))
     async def go_to_next_page(self, payload):
         await self.show_checked_page(self.current_page + 1)
 
 
-@bot.event
+@ bot.event
 async def on_ready():
     timelapse = time.time()
     print(f"keitobot Online - took {timelapse-start} seconds")
 
 
-@bot.command(name="quote", alias='q')
+@ bot.command(name="quote", alias='q')
 async def quote(ctx, *, message: str):
+    if ctx.message.author == 172080639846252544:
+        await ctx.send("Loser")
+
     query = message
     users = pd.read_sql(
         "select distinct username from phrases", connection)
@@ -89,19 +105,18 @@ async def quote(ctx, *, message: str):
         await ctx.send(f"{query} is not in list of usernames. the current list is {usernames}")
 
 
-@bot.command(name="add", alias='a')
+@ bot.command(name="add", alias='a')
 async def add(ctx, *, message: str):
     try:
         phrase_index = message.index("!p")
         user_index = message.index("!u")
-        print(phrase_index, user_index)
 
         phrase = message[phrase_index+2:user_index].strip()
         user = message[user_index+2:len(message)].strip()
-        # cursor.execute(
-        #     f"INSERT INTO phrases(phrase, username) VALUES('{phrase}', '{user}')")
+        cursor.execute("""
+            INSERT INTO phrases(phrase, username) VALUES(%s, %s)
+            """, (phrase, user))
 
-        # add button to accept add
         await ctx.send(f"Added phrase: {phrase} and username: {user} to database")
         connection.commit()
         print(f"added to db phrase: {phrase} and user: {user} ")
@@ -109,7 +124,7 @@ async def add(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
 
-@bot.command(name="delete", alias='d')
+@ bot.command(name="delete", alias='d')
 async def delete(ctx, *, message: str):
     try:
         id_index = message.index("!id")
@@ -125,11 +140,12 @@ async def delete(ctx, *, message: str):
         id_list = ids_df.to_dict('list')
         ids = id_list["id"]
         sorted_ids = sorted(ids, key=int)
+
         if sorted_ids.__contains__(id):
             print(f"{id} is in database")
             await ctx.send(f"Deleted {id}, which has phrase: {phrase} in database")
-            # cursor.execute(
-            # f"DELETE FROM phrases where id = {id}")
+            cursor.execute(
+                f"DELETE FROM phrases where id = {id}")
 
             # add button to accept delete
         else:
@@ -141,8 +157,8 @@ async def delete(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$delete !id <INTEGER> ")
 
 
-@bot.command(name="test", alias='tl')
-async def test(ctx, message: str):
+@ bot.command(name="list", alias='l')
+async def list(ctx, message: str):
 
     users = pd.read_sql(
         "select distinct username from phrases", connection)
@@ -171,36 +187,29 @@ async def test(ctx, message: str):
         await ctx.send(f"Username {message} not in list of usernames")
 
 
-@bot.command(name="list", alias='tl')
-async def list(ctx, message: str):
+@ bot.command(name="listlinks", alias='ll')
+async def listlinks(ctx, message: str):
 
     users = pd.read_sql(
         "select distinct username from phrases", connection)
     list_df = users.to_dict('list')
     list_usernames = list_df["username"]
-    buttons = [u"\u25C0", u"\u25B6"]
     if message.strip() in list_usernames:
         try:
             list_df = pd.read_sql(
                 f"select * from phrases where username = '{message}'", connection)
             listlist = list_df.values.tolist()
-            ll = []
+            no_links = []
+            links = []
             for elem in listlist:
                 if "https" not in elem[0]:
-                    ll.append(elem)
+                    no_links.append(elem)
                 else:
-                    print("http found")
+                    links.append(elem)
 
-            table = (
-                "\n".join(f"ID: {elem[2]} Phrase: {elem[0]}" for elem in ll))
-
-            embed = discord.Embed(title="Phrases",
-                                  description=f"All the phrases said by {message}")
-            embed.add_field(
-                name=f"Phrases", value=table)
-            msg = await ctx.send(embed=embed)
-            for button in buttons:
-                await msg.add_reaction(button)
+            pages = MyMenuPages(source=PaginationListPhrases(
+                links, message), clear_reactions_after=True)
+            await pages.start(ctx)
 
         except:
             await ctx.send("Username doesnt exist, did you type it correctly? check current list of users with '$users' ")
@@ -208,7 +217,7 @@ async def list(ctx, message: str):
         await ctx.send(f"Username {message} not in list of usernames")
 
 
-@bot.command(name="users", alias='u')
+@ bot.command(name="users", alias='u')
 async def users(ctx):
     users_df = pd.read_sql(
         "select distinct username from phrases", connection)
@@ -222,10 +231,26 @@ async def users(ctx):
     await ctx.send(embed=embed)
 
 
-@quote.error
-@add.error
-@delete.error
-@list.error
+@ bot.command(name="images", alias='i')
+async def images(ctx):
+    users_df = pd.read_sql(
+        "select phrase from phrases", connection)
+    list_df = users_df.to_dict('list')
+    phrase_list = list_df["phrase"]
+    links = []
+    for elem in phrase_list:
+        if "https" in elem:
+            links.append(elem)
+
+    image_embed = MyMenuPages(source=ImageListPagination(
+        links), clear_reactions_after=True)
+    await image_embed.start(ctx)
+
+
+@ quote.error
+@ add.error
+@ delete.error
+@ list.error
 async def send_error(ctx, error):
     print(type(error))
     await ctx.send(error)

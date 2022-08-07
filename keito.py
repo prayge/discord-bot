@@ -1,6 +1,7 @@
 from __future__ import nested_scopes
 from ast import alias
 from discord.ext import commands, menus
+from discord.ext.menus import button, First, Last
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -35,17 +36,23 @@ bot = commands.Bot(command_prefix='$')
 cursor = connection.cursor()
 
 
-class MySource(menus.ListPageSource):
+class PaginationListPhrases(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=10)
+
     async def format_page(self, menu, entries):
-        return f"This is number {entries}."
+        offset = menu.current_page * self.per_page
+        return '\n'.join(f'{i}. {v}' for i, v in enumerate(entries, start=offset))
 
 
-@bot.command()
-async def test(ctx):
-    data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    formatter = MySource(data, per_page=1)
-    menu = menus.MenuPages(formatter)
-    await menu.start(ctx)
+class MyMenuPages(menus.MenuPages, inherit_buttons=False):
+    @button('\u2B05\uFE0F', position=First(1))
+    async def go_to_previous_page(self, payload):
+        await self.show_checked_page(self.current_page - 1)
+
+    @button('\u27A1\uFE0F', position=Last(1))
+    async def go_to_next_page(self, payload):
+        await self.show_checked_page(self.current_page + 1)
 
 
 @bot.event
@@ -124,6 +131,42 @@ async def delete(ctx, *, message: str):
         connection.commit()
     except:
         await ctx.send("Add command formated incorrectly. please use '$delete !id <INTEGER> ")
+
+
+@bot.command(name="test", alias='tl')
+async def test(ctx, message: str):
+
+    users = pd.read_sql(
+        "select distinct username from phrases", connection)
+    list_df = users.to_dict('list')
+    list_usernames = list_df["username"]
+    if message.strip() in list_usernames:
+        try:
+            list_df = pd.read_sql(
+                f"select * from phrases where username = '{message}'", connection)
+            listlist = list_df.values.tolist()
+            ll = []
+            for elem in listlist:
+                if "https" not in elem[0]:
+                    ll.append(elem)
+                else:
+                    print("http found")
+
+            table = (
+                "\n".join(f"ID: {elem[2]} Phrase: {elem[0]}" for elem in ll))
+
+            embed = discord.Embed(title="Phrases",
+                                  description=f"All the phrases said by {message}")
+            embed.add_field(
+                name=f"Phrases", value=table)
+            pages = MyMenuPages(source=PaginationListPhrases(
+                ll), clear_reactions_after=True)
+            await pages.start(ctx)
+
+        except:
+            await ctx.send("Username doesnt exist, did you type it correctly? check current list of users with '$users' ")
+    else:
+        await ctx.send(f"Username {message} not in list of usernames")
 
 
 @bot.command(name="list", alias='tl')

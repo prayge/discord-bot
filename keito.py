@@ -82,6 +82,9 @@ class Confirm(menus.Menu):
         self.msg = msg
         self.result = None
 
+    async def interaction_check(self, interaction):
+        return interaction.user == self.ctx.author
+
     async def send_initial_message(self, ctx, channel):
         return await channel.send(self.msg)
 
@@ -265,19 +268,22 @@ async def users(ctx):
 
 
 @ bot.command(name="images", alias='i')
-async def images(ctx):
-    users_df = pd.read_sql(
-        "select phrase from phrases", connection)
-    list_df = users_df.to_dict('list')
-    phrase_list = list_df["phrase"]
-    links = []
-    for elem in phrase_list:
-        if "https" in elem:
-            links.append(elem)
+async def images(ctx, message: str):
+    try:
+        users_df = pd.read_sql(
+            f"select phrase from phrases where username = '{message}'", connection)
+        list_df = users_df.to_dict('list')
+        phrase_list = list_df["phrase"]
+        links = []
+        for elem in phrase_list:
+            if "https" in elem:
+                links.append(elem)
 
-    image_embed = MyMenuPages(source=ImageListPagination(
-        links), clear_reactions_after=True)
-    await image_embed.start(ctx)
+        image_embed = MyMenuPages(source=ImageListPagination(
+            links), clear_reactions_after=True)
+        await image_embed.start(ctx)
+    except:
+        ctx.send("User doesn't have any images")
 
 
 @ quote.error

@@ -1,4 +1,3 @@
-from __future__ import nested_scopes
 import sys
 from io import BytesIO
 import requests
@@ -38,7 +37,7 @@ try:
 except:
     print('Can not access database')
 
-bot = commands.Bot(command_prefix='$')
+bot = commands.Bot(command_prefix='its')
 cursor = connection.cursor()
 
 
@@ -113,6 +112,16 @@ class Confirm(menus.Menu):
 async def on_ready():
     timelapse = time.time()
     print(f"keitobot Online - took {timelapse-start} seconds")
+
+
+@ bot.command(name="keito", alias='q')
+async def keito(ctx):
+    df_dict = pd.read_sql(
+        f"select * from phrases where username = 'Keito'", connection)
+    json_print = df_dict.to_dict(orient='records')
+    randint = random.randint(0, len(json_print)-1)
+    phrase = json_print[randint]
+    await ctx.send(f"{phrase['phrase']}")
 
 
 @ bot.command(name="quote", alias='q')
@@ -287,6 +296,7 @@ async def images(ctx, message: str):
 
 @ bot.command(name="draw", alias='d')
 async def draw(ctx, message: str):
+
     if "http" in message:
         try:
             print(message)
@@ -301,10 +311,10 @@ async def draw(ctx, message: str):
                 w, h = im.size
 
                 # draw multiline text
-                d.text(xy=(w/2, 10), text="TOP TEXT", font=fnt,
+                d.text(xy=(w/2, 10), text="GIVE SAM ", font=fnt,
                        fill="white", stroke_fill="black", anchor="mt", stroke_width=2)
 
-                d.text(xy=(w/2, h-10), text="BOTTOM TEXT", font=fnt,
+                d.text(xy=(w/2, h-10), text="HIS MONEY", font=fnt,
                        fill="white", stroke_fill="black", anchor="ms", stroke_width=2)
                 print("saving")
                 im.save("test.png")
@@ -317,6 +327,15 @@ async def draw(ctx, message: str):
 
 
 @ draw.error
+async def draw_error(ctx, error):
+    print(type(error))
+    print(error)
+    if error == "message is a required argument that is missing.":
+        await ctx.send("Message is None, please enter a link ")
+
+    await ctx.send(error)
+
+
 @ quote.error
 @ add.error
 @ delete.error

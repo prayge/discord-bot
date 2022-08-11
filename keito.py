@@ -147,6 +147,7 @@ async def quote(ctx, *, message: str):
         await ctx.send(f"{query} is not in list of usernames. the current list is {usernames}")
 
 
+# add commands
 @ bot.command(name="add", alias='a')
 async def add(ctx, *, message: str):
     try:

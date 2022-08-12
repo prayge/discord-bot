@@ -4,4 +4,4 @@ discord.ext
 asyncio
 psycopg2 
 pandas 
-
+requests

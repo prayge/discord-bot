@@ -3,6 +3,7 @@ python-dotenv
 discord.ext 
 asyncio
 psycopg2 
-pandas 
+pandas
+Pillow
 requests
 git+https://github.com/Rapptz/discord-ext-menus

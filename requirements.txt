@@ -5,3 +5,4 @@ asyncio
 psycopg2 
 pandas 
 requests
+git+https://github.com/Rapptz/discord-ext-menus

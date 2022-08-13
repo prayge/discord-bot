@@ -1,31 +1,27 @@
-import pickle
-from google_images_search import GoogleImagesSearch
-from dotenv import load_dotenv
-import os
+users_df = pd.read_sql(
+    f"select phrase from phrases where username = 'Keito'", connection)
+links = users_df[users_df["phrase"].str.contains('http')]
+print(links)
+list_links = links.to_dict('list')
+links = list_links["phrase"]
 
-load_dotenv()
-GCS_TOKEN = os.getenv('GCS_TOKEN')
-GCS_ID = os.getenv('GCS_ID')
+frame_df = pd.read_sql(
+    f"select phrase from phrases where username = 'frame'", connection)
+frame = frame_df[frame_df["phrase"].str.contains('http')]
+list_frame = frame.to_dict('list')
+frame = list_frame["phrase"]
 
-gis = GoogleImagesSearch(
-    GCS_TOKEN, GCS_ID)
+rand_frame = requests.get(random.choice(frame))
+response = requests.get(random.choice(links))
+print("d")
+with Image.open(BytesIO(response.content)) as im:
+    print("e")
+    w, h = im.size
 
-# define search params:
-_search_params = {
-    'q': 'bingus meme',
-    'num': 100,
-    'safe': 'off',
-    'fileType': ['png', 'jpg', 'gif'],
-}
+    im2 = Image.open(BytesIO(rand_frame.content))
 
-# this will only search for images:
-a = gis.search(search_params=_search_params)
-res = gis.results()
+    im.paste(im2, (0, 0), im2)
 
-bingus_urls = []
-
-for link in res:
-    bingus_urls.append(link.url)
-
-with open("bins", "ab") as out:
-    pickle.dump(bingus_urls, out)
+    print("saving")
+    im.save("test.png")
+    await ctx.send(file=discord.File('test.png'))

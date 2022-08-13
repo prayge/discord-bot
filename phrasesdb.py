@@ -1,3 +1,7 @@
+import random
+from io import BytesIO
+from PIL import Image
+import requests
 from hashlib import new
 from xmlrpc.server import list_public_methods
 import psycopg2 as pg
@@ -30,18 +34,14 @@ except:
 # cursor = connection.cursor()
 # try:
 #     cursor.execute(
-#         "CREATE TABLE phrases (id INT PRIMARY KEY, phrase varchar, username varchar);")
+#         "CREATE TABLE drops (id INT, photo varchar, phrase varchar, frame varchar);")
 # except:
 #     print("I can't drop our test database!")
 
 # connection.commit()
 
-# f = open(r'./phrases.csv', 'r')
-# cursor.copy_from(f, 'phrases', sep=',')
-# f.close()
-
 # only_ethan = pd.read_sql(
-#     "select * from phrases ", connection)
+#     "select * from drops ", connection)
 # print(only_ethan)
 
 # connection.commit()
@@ -64,14 +64,14 @@ except:
 
 ##############################  DROP COLUMN #############################
 
-# cursor = connection.cursor()
-# try:
-#     cursor.execute(
-#         "ALTER TABLE phrases ADD COLUMN id SERIAL PRIMARY KEY;")
-#     print("added")
-# except:
-#     print("I can't drop !")
-# connection.commit()
+cursor = connection.cursor()
+try:
+    cursor.execute(
+        "ALTER TABLE drops ADD COLUMN owner varchar;")
+    print("added")
+except:
+    print("I can't drop !")
+connection.commit()
 
 # only_ethan = pd.read_sql(
 #     "select * from phrases where username = 'Keito'", connection)
@@ -86,10 +86,12 @@ except:
 # phrases_test = '\n'.join(new_l)
 # print(phrases_test)
 
-list_df = pd.read_sql(
-    f"select * from phrases ", connection)
+pic = random.choice(os.listdir("pics"))
+frame = random.choice(os.listdir("frames"))
+im = Image.open("pics/" + pic)
+im2 = Image.open("frames/" + frame)
 
-listlist = list_df.values.tolist()
-print(len(listlist))
-for e in listlist:
-    print(e)
+drops = pd.read_sql(
+    "select * from drops ", connection)
+drop = drops.to_dict('list')
+print(drops)

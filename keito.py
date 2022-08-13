@@ -1,9 +1,13 @@
+from sre_constants import NOT_LITERAL
+from PIL import ImageFont, ImageDraw, Image
+import datetime
 import sys
 from io import BytesIO
 import requests
-from ast import alias
 from discord.ext import commands, menus
 from discord.ext.menus import button, First, Last
+from discord.ext.commands import cooldown, BucketType
+
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -38,6 +42,8 @@ except:
     print('Can not access database')
 
 bot = commands.Bot(command_prefix='its')
+
+
 cursor = connection.cursor()
 
 
@@ -58,16 +64,30 @@ class PaginationListPhrases(menus.ListPageSource):
         return embed
 
 
-class ImageListPagination(menus.ListPageSource):
-    def __init__(self, data):
-        super().__init__(data, per_page=1)
+class ImageListPagination(menus.GroupByPageSource):
+    def __init__(self, entries):
 
-    async def format_page(self, menu, image):
-        embed = discord.Embed(title="Images",
-                              description=f"Images of loser")
-        embed.add_field(name=f"id", value=image)
+        super().__init__(
+            entries=entries,
+            per_page=1,
+            key=None,
+            sort=False
+        )
+
+    async def format_page(self, menu, entry):
+        print(entry)
+        print(type(entry))
+
+        entry_dict = entry[0]
+        id = entry_dict["id"]
+        phrase = entry_dict["phrase"]
+        name = entry_dict["username"]
+
+        embed = discord.Embed(title="Images")
+        embed.add_field(
+            name=f"{name}'s Photos, *hes so cute*", value=f"ID: {id}")
         offset = menu.current_page * self.per_page
-        embed.set_image(url=image)
+        embed.set_image(url=phrase)
         return embed
 
 
@@ -93,12 +113,12 @@ class Confirm(menus.Menu):
     async def send_initial_message(self, ctx, channel):
         return await channel.send(self.msg)
 
-    @menus.button('\N{WHITE HEAVY CHECK MARK}')
+    @ menus.button('\N{WHITE HEAVY CHECK MARK}')
     async def do_confirm(self, payload):
         self.result = True
         self.stop()
 
-    @menus.button('\N{CROSS MARK}')
+    @ menus.button('\N{CROSS MARK}')
     async def do_deny(self, payload):
         self.result = False
         self.stop()
@@ -114,7 +134,7 @@ async def on_ready():
     print(f"keitobot Online - took {timelapse-start} seconds")
 
 
-@ bot.command(name="keito", alias='q')
+@ bot.command(name="keito", aliases=['k'])
 async def keito(ctx):
     df_dict = pd.read_sql(
         f"select * from phrases where username = 'Keito'", connection)
@@ -124,11 +144,8 @@ async def keito(ctx):
     await ctx.send(f"{phrase['phrase']}")
 
 
-@ bot.command(name="quote", alias='q')
+@ bot.command(name="quote")
 async def quote(ctx, *, message: str):
-    if ctx.message.author == 172080639846252544:
-        await ctx.send("Loser")
-
     query = message
     users = pd.read_sql(
         "select distinct username from phrases", connection)
@@ -148,7 +165,23 @@ async def quote(ctx, *, message: str):
 
 
 # add commands
-@ bot.command(name="add", alias='a')
+@ bot.command(name="imgadd", aliases=['ia'])
+async def imgadd(ctx, *, message: str):
+
+    phrase = message
+    user = "Keiruta"
+
+    cursor.execute("""
+        INSERT INTO phrases(phrase, username) VALUES(%s, %s)
+        """, (phrase, user))
+
+    await ctx.send(f"Added phrase: {phrase} and username: {user} to database")
+    connection.commit()
+    print(f"added to db phrase: {phrase} and user: {user} ")
+
+
+# add commands
+@ bot.command(name="add", aliases=['a'])
 async def add(ctx, *, message: str):
     try:
         phrase_index = message.index("!p")
@@ -167,7 +200,7 @@ async def add(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
 
-@ bot.command(name="delete", alias='d')
+@ bot.command(name="delete")
 async def delete(ctx, *, message: str):
 
     try:
@@ -202,7 +235,7 @@ async def delete(ctx, *, message: str):
         await ctx.send("Add command formated incorrectly. please use '$delete !id <INTEGER> ")
 
 
-@ bot.command(name="list", alias='l')
+@ bot.command(name="list")
 async def list(ctx, message: str):
 
     users = pd.read_sql(
@@ -232,7 +265,7 @@ async def list(ctx, message: str):
         await ctx.send(f"Username {message} not in list of usernames")
 
 
-@ bot.command(name="listlinks", alias='ll')
+@ bot.command(name="listlinks")
 async def listlinks(ctx, message: str):
 
     users = pd.read_sql(
@@ -262,7 +295,7 @@ async def listlinks(ctx, message: str):
         await ctx.send(f"Username {message} not in list of usernames")
 
 
-@ bot.command(name="users", alias='u')
+@ bot.command(name="users", alias=['u'])
 async def users(ctx):
     users_df = pd.read_sql(
         "select distinct username from phrases", connection)
@@ -276,26 +309,19 @@ async def users(ctx):
     await ctx.send(embed=embed)
 
 
-@ bot.command(name="images", alias='i')
+@ bot.command(name="images", aliases=['i'])
 async def images(ctx, message: str):
-    try:
-        users_df = pd.read_sql(
-            f"select phrase from phrases where username = '{message}'", connection)
-        list_df = users_df.to_dict('list')
-        phrase_list = list_df["phrase"]
-        links = []
-        for elem in phrase_list:
-            if "https" in elem:
-                links.append(elem)
 
-        image_embed = MyMenuPages(source=ImageListPagination(
-            links), clear_reactions_after=True)
-        await image_embed.start(ctx)
-    except:
-        ctx.send("User doesn't have any images")
+    users_df = pd.read_sql(
+        f"SELECT phrase, id, username FROM phrases WHERE( phrase LIKE 'http%' AND username = '{message}')", connection)
+    list_df = users_df.to_dict('records')
+
+    image_embed = MyMenuPages(source=ImageListPagination(
+        list_df), clear_reactions_after=True)
+    await image_embed.start(ctx)
 
 
-@ bot.command(name="draw", alias='d')
+@ bot.command(name="draw")
 async def draw(ctx, message: str):
 
     if "http" in message:
@@ -327,21 +353,54 @@ async def draw(ctx, message: str):
         ctx.send("Not an image")
 
 
-@ draw.error
-async def draw_error(ctx, error):
-    print(type(error))
-    print(error)
-    if error == "message is a required argument that is missing.":
-        await ctx.send("Message is None, please enter a link ")
+@ bot.command(name="drop", aliases=['d'])
+@ commands.cooldown(1, 2, commands.BucketType.user)
+async def drop(ctx):
 
-    await ctx.send(error)
+    no_link_df = pd.read_sql(
+        "select phrase from phrases where username = 'Keito' ", connection)
+    no_links = no_link_df[~no_link_df['phrase'].str.contains("http")]
+    phrases = no_links.to_dict('list')["phrase"]
+
+    drops = pd.read_sql(
+        "select * from drops ", connection)
+    drop = drops.to_dict('list')
+    print(drops)
+
+    # randoms
+    pic = random.choice(os.listdir("pics"))
+    frame = random.choice(os.listdir("frames"))
+    phrase = random.choice(phrases)
+    id = 1  # temp
+    potential_owner = ctx.author.id
+
+    print(id, pic, phrase, frame, potential_owner)
+
+    im = Image.open("pics/" + pic)
+    im2 = Image.open("frames/" + frame)
+
+    # cursor.execute("""
+    #     INSERT INTO drops(id, photo, phrase, frame, owner) VALUES(%s, %s, %s, %s, %s)
+    #     """, (id, pic, phrase, frame, potential_owner))
+    # connection.commit()
+
+    # im.paste(im2, (0, 0), im2)
+    # print("saving")
+    # im.save("test.png")
+    # await ctx.send(file=discord.File('test.png'))
+
+# @drop.error
+# async def command_name_error(ctx, error):
+#     if isinstance(error, commands.CommandOnCooldown):
+#         secs = time.strftime("%M minute and %S seconds",
+#                              time.gmtime(error.retry_after))
+#         await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
 
 
 @ quote.error
 @ add.error
 @ delete.error
 @ list.error
-@ images.error
 @ users.error
 async def send_error(ctx, error):
     print(type(error))

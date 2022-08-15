@@ -1,5 +1,5 @@
-from sre_constants import NOT_LITERAL
 from PIL import ImageFont, ImageDraw, Image
+import aiohttp
 import datetime
 import sys
 from io import BytesIO
@@ -7,7 +7,6 @@ import requests
 from discord.ext import commands, menus
 from discord.ext.menus import button, First, Last
 from discord.ext.commands import cooldown, BucketType
-
 from dotenv import load_dotenv
 import asyncio
 import os
@@ -19,7 +18,7 @@ import pandas as pd
 import time
 from PIL import Image, ImageFont, ImageDraw
 import io
-
+import string
 
 start = time.time()
 
@@ -41,26 +40,67 @@ try:
 except:
     print('Can not access database')
 
-bot = commands.Bot(command_prefix='its')
-
+bot = commands.Bot(command_prefix=['its', 'Its', "It's"])
 
 cursor = connection.cursor()
 
 
 class PaginationListPhrases(menus.ListPageSource):
     def __init__(self, data, username):
-        super().__init__(data, per_page=10)
+        super().__init__(data, per_page=4)
         self.username = username
 
     async def format_page(self, menu, phrases):
 
         embed = discord.Embed(title=f"{self.username}'s Phrases",
-                              description=f"All the phrases said by this loser")
+                              description=f"number of images for this loser: {len(phrases)}")
         offset = menu.current_page * self.per_page
         lines = '\n'.join(f'ID: {elem[2]}, {elem[0]}' for _,
                           elem in enumerate(phrases, start=offset))
         embed.add_field(
             name=f"Phrases", value=lines)
+        return embed
+
+
+def add_space(text, offset):
+    for _ in range(len(text), offset):
+        text = text + " "
+    return text
+
+
+class PaginationCardCollection(menus.ListPageSource):
+    def __init__(self, data, username):
+        super().__init__(data, per_page=10)
+        self.username = username
+
+    async def format_page(self, menu, phrases):
+
+        embed = discord.Embed(
+            title=f"{self.username.author.name}'s Colleciton")
+        offset = menu.current_page * self.per_page
+
+        edition_space_count = 5
+        phrase_space_count = 41
+        card_space_count = 5
+
+        ll = []
+
+        for _, elem in enumerate(phrases, start=offset):
+            edition = str(elem[0])
+            phrase = str(elem[1])
+            card = str(elem[2])
+
+            e = add_space(edition, edition_space_count)
+            p = add_space(phrase, phrase_space_count)
+            c = add_space(card, card_space_count)
+
+            ll.append(
+                f'**Edition:** `{e}` **Phrase:** `{p}` **Card:** `{c}`')
+
+        text = "\n".join(ll)
+
+        embed.add_field(
+            name=f"Cards", value=text)
         return embed
 
 
@@ -121,6 +161,33 @@ class Confirm(menus.Menu):
     @ menus.button('\N{CROSS MARK}')
     async def do_deny(self, payload):
         self.result = False
+        self.stop()
+
+    async def prompt(self, ctx):
+        await self.start(ctx, wait=True)
+        return self.result
+
+
+class DropConfirm(menus.Menu):
+    def __init__(self, msg):
+        super().__init__(timeout=30.0, delete_message_after=True)
+        self.msg = msg
+        self.result = None
+
+    async def interaction_check(self, interaction):
+        return interaction.user == self.ctx.author
+
+    async def send_initial_message(self, ctx, channel):
+        return await channel.send(self.msg)
+
+    @ menus.button('\N{WHITE HEAVY CHECK MARK}')
+    async def do_confirm(self, payload):
+        self.result = 1
+        self.stop()
+
+    @ menus.button('\N{CROSS MARK}')
+    async def do_deny(self, payload):
+        self.result = 0
         self.stop()
 
     async def prompt(self, ctx):
@@ -265,34 +332,23 @@ async def list(ctx, message: str):
         await ctx.send(f"Username {message} not in list of usernames")
 
 
-@ bot.command(name="listlinks")
-async def listlinks(ctx, message: str):
+@ bot.command(name="links")
+async def links(ctx, message: str):
 
-    users = pd.read_sql(
-        "select distinct username from phrases", connection)
-    list_df = users.to_dict('list')
-    list_usernames = list_df["username"]
-    if message.strip() in list_usernames:
-        try:
-            list_df = pd.read_sql(
-                f"select * from phrases where username = '{message}'", connection)
-            listlist = list_df.values.tolist()
-            no_links = []
-            links = []
-            for elem in listlist:
-                if "https" not in elem[0]:
-                    no_links.append(elem)
-                else:
-                    links.append(elem)
+    list_df = pd.read_sql(
+        f"select * from phrases where username = '{message}'", connection)
+    listlist = list_df.values.tolist()
+    no_links = []
+    links = []
+    for elem in listlist:
+        if "https" not in elem[0]:
+            no_links.append(elem)
+        else:
+            links.append(elem)
 
-            pages = MyMenuPages(source=PaginationListPhrases(
-                links, message), clear_reactions_after=True)
-            await pages.start(ctx)
-
-        except:
-            await ctx.send("Username doesnt exist, did you type it correctly? check current list of users with '$users' ")
-    else:
-        await ctx.send(f"Username {message} not in list of usernames")
+    pages = MyMenuPages(source=PaginationListPhrases(
+        links, message), clear_reactions_after=True)
+    await pages.start(ctx)
 
 
 @ bot.command(name="users", alias=['u'])
@@ -354,7 +410,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 2, commands.BucketType.user)
+@ commands.cooldown(1, 1, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -362,39 +418,196 @@ async def drop(ctx):
     no_links = no_link_df[~no_link_df['phrase'].str.contains("http")]
     phrases = no_links.to_dict('list')["phrase"]
 
-    drops = pd.read_sql(
-        "select * from drops ", connection)
-    drop = drops.to_dict('list')
-    print(drops)
-
     # randoms
-    pic = random.choice(os.listdir("pics"))
+    photo = random.choice(os.listdir("pics"))
     frame = random.choice(os.listdir("frames"))
     phrase = random.choice(phrases)
+    old_phrase = phrase
     id = 1  # temp
     potential_owner = ctx.author.id
+    print(id, photo, phrase, frame, potential_owner)
 
-    print(id, pic, phrase, frame, potential_owner)
+    drops = pd.read_sql(
+        "select * from drops ", connection)
+    drop = drops.to_dict('records')
+    print(drops)
 
-    im = Image.open("pics/" + pic)
+    letters_and_digits = string.ascii_letters + string.digits
+    cardid = ''.join((random.choice(letters_and_digits)
+                      for i in range(5))).upper()
+    print(cardid)
+
+    for elem in drop:
+        if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:
+            id += 1
+
+    print(id, photo, phrase, frame, potential_owner)
+
+    if len(phrase) > 22:
+        spaces = [i for i, char in enumerate(
+            phrase) if char in string.whitespace]
+        print(spaces)
+        index = int(len(spaces)/2)
+        print(index)
+
+        phrase = phrase[:spaces[index]] + "\n" + phrase[spaces[index] + 1:]
+
+    im = Image.open("pics/" + photo)
     im2 = Image.open("frames/" + frame)
 
-    # cursor.execute("""
-    #     INSERT INTO drops(id, photo, phrase, frame, owner) VALUES(%s, %s, %s, %s, %s)
-    #     """, (id, pic, phrase, frame, potential_owner))
-    # connection.commit()
+    im.paste(im2, (0, 0), im2)
+    font = ImageFont.truetype("impact.ttf", 45)  # load font
+    cardid_font = ImageFont.truetype("impact.ttf", 25)  # load font
 
-    # im.paste(im2, (0, 0), im2)
-    # print("saving")
-    # im.save("test.png")
-    # await ctx.send(file=discord.File('test.png'))
+    draw = ImageDraw.Draw(im)
 
-# @drop.error
-# async def command_name_error(ctx, error):
-#     if isinstance(error, commands.CommandOnCooldown):
-#         secs = time.strftime("%M minute and %S seconds",
-#                              time.gmtime(error.retry_after))
-#         await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
+    w, h = im.size
+
+    # edition and cardid
+    draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
+    draw.text((140, 10), cardid, (255, 255, 255), font=cardid_font)
+
+    if "\n" in phrase:
+        draw.multiline_text((w/2, 720), f"{phrase}",
+                            (0, 0, 0), font=font, align='center', anchor="ma")
+    else:
+        draw.multiline_text((w/2, 750), f"{phrase}",
+                            (0, 0, 0), font=font, align='center', anchor="ma")
+    print("saving")
+
+    im.save(f"{cardid}.png")
+    image_message = await ctx.send(file=discord.File(f'{cardid}.png'))
+    url = image_message.attachments[0].url
+    if os.path.exists(f"{cardid}.png"):
+        os.remove(f"{cardid}.png")
+
+    confirm = await DropConfirm(f'Do you want to add this special keito to your collection?').prompt(ctx)
+    print(confirm)
+    if confirm == 1:
+        cursor.execute("""
+            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
+            """, (id, photo, old_phrase, frame, potential_owner, cardid, url))
+        connection.commit()
+        await ctx.send("Saved this keito to your collection!")
+        print(f"saved to database with owner {potential_owner}")
+    if confirm == 0 or confirm is None:
+        cursor.execute("""
+            INSERT INTO drops(id, photo, phrase, frame, cardid, url) VALUES(%s, %s, %s, %s, %s, %s)
+            """, (id, photo, old_phrase, frame, cardid, url))
+        connection.commit()
+        print(f"saved to database with no owner")
+
+
+@ bot.command(name="collection", aliases=['c'])
+async def collection(ctx):
+    drops = pd.read_sql(
+        "select * from drops ", connection)
+    drop = drops.to_dict('records')
+
+    owner = ctx.author.id
+    user_cards = []
+    for d in drop:
+        print(d["owner"], owner)
+        if d["owner"] is not None:
+            if int(d["owner"]) == int(owner):
+                user_cards.append([d["id"], d["phrase"], d["cardid"]])
+
+    pages = MyMenuPages(source=PaginationCardCollection(
+        user_cards, ctx), clear_reactions_after=True)
+    await pages.start(ctx)
+
+
+@ collection.error
+async def collection_message_error(ctx, error):
+    if isinstance(error, commands.CommandInvokeError):
+        await ctx.send(f"{ctx.author.mention}, You have no cards in your collection, please collect cards using 'itsdrop'")
+
+
+@ bot.command(name="view", aliases=['v'])
+async def view(ctx, message: str):
+
+    card_dict = pd.read_sql(
+        f"select * from drops where cardid = '{message}'", connection)
+    cards = card_dict.to_dict('records')
+    card = cards[0]
+
+    edition = card["id"]
+    photo = card["photo"]
+    phrase = card["phrase"]
+    frame = card["frame"]
+    owner = card["owner"]
+    cardid = card["cardid"]
+    url = card["url"]
+
+    em = discord.Embed(title="Card Details",
+                       description=f"Owned by <@{owner}>")
+    em.add_field(
+        name="Card Details", value=f'\n\n**Edition:** `{edition}` \n**Phrase:** `{phrase}` \n**Card:** `{cardid}`')
+
+    if url is not None:
+        em.set_image(url=url)
+
+    # em add url
+
+    await ctx.channel.send(embed=em)
+
+
+@ view.error
+async def view_message_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f"{ctx.author.mention}, You forgot to add a card to view, please add a card ID.")
+
+
+@ bot.command(name="use", aliases=['u'])
+async def use(ctx):
+    author = ctx.author.name
+    await ctx.send(f"{author}, fuck off hes not ready")
+
+
+@ bot.command(name="inventory", aliases=['inv'])
+async def inventory(ctx):
+    author = ctx.author.name
+    await ctx.send(f"{author}, fuck off hes not ready")
+
+
+@ drop.error
+async def drop_cooldown_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        secs = time.strftime("%M minute and %S seconds",
+                             time.gmtime(error.retry_after))
+        await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
+
+bot.remove_command('help')
+
+
+@ bot.command(name="help", aliases=['h'])
+async def help(ctx):
+    em = discord.Embed(title="Keito bot help",
+                       description=f"Commands and how to use them")
+    em.add_field(
+        name="keito", value=f'Returns the user with a quote by keito or an image of the lovely boy  e.g. "itskeito"', inline=False)
+    em.add_field(
+        name="quote", value=f'Returns the user with a quote by user mentioned in the message, e.g. "itsquote Patryk",', inline=False)
+    em.add_field(
+        name="add", value=f'Adds a quote for a specified user e.g. "itsadd !p <THE QUOTE> !u <THE USER>",', inline=False)
+    em.add_field(
+        name="delete", value=f'deletes a quote for a specified ID e.g. "itsdelete !id <QUOTE ID>",', inline=False)
+    em.add_field(
+        name="list", value=f'Lists the quotes (NOT IMAGE LINKS) for a user e.g. "itslist <USERNAME>",', inline=False)
+    em.add_field(
+        name="links", value=f'Lists the IMAGE LINKS for a user e.g. "itslinks <USERNAME>",', inline=False)
+    em.add_field(
+        name="users", value=f'Lists all users with a quote e.g. "itsusers",', inline=False)
+    em.add_field(
+        name="images", value=f'Creates an embed with images of user e.g. "itsimages <USERNAME>",', inline=False)
+    em.add_field(
+        name="drop", value=f'Drops a keito e.g. "itsdrop",', inline=False)
+    em.add_field(
+        name="collection", value=f'Displays all cards associated with user e.g. "itscollection",', inline=False)
+    em.add_field(
+        name="view", value=f'Displays card and information with associated card in message e.g. "itsview <CARD ID>",', inline=False)
+
+    await ctx.channel.send(embed=em)
 
 
 @ quote.error

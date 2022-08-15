@@ -1,3 +1,4 @@
+import string
 import random
 from io import BytesIO
 from PIL import Image
@@ -67,7 +68,7 @@ except:
 cursor = connection.cursor()
 try:
     cursor.execute(
-        "ALTER TABLE drops ADD COLUMN owner varchar;")
+        "ALTER TABLE drops ADD COLUMN url varchar;")
     print("added")
 except:
     print("I can't drop !")
@@ -86,12 +87,44 @@ connection.commit()
 # phrases_test = '\n'.join(new_l)
 # print(phrases_test)
 
-pic = random.choice(os.listdir("pics"))
-frame = random.choice(os.listdir("frames"))
-im = Image.open("pics/" + pic)
-im2 = Image.open("frames/" + frame)
+# no_link_df = pd.read_sql(
+#     "select phrase from phrases where username = 'Keito' ", connection)
+# no_links = no_link_df[~no_link_df['phrase'].str.contains("http")]
+# phrases = no_links.to_dict('list')["phrase"]
 
-drops = pd.read_sql(
-    "select * from drops ", connection)
-drop = drops.to_dict('list')
-print(drops)
+# # randoms
+# photo = random.choice(os.listdir("pics"))
+# frame = random.choice(os.listdir("frames"))
+# phrase = random.choice(phrases)
+# id = 1  # temp
+# potential_owner = 170983161650610178
+
+# print(id, photo, phrase, frame, potential_owner)
+
+# drops = pd.read_sql(
+#     "select * from drops ", connection)
+# drop = drops.to_dict('records')
+# print(drops)
+
+# for elem in drop:
+#     if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:
+#         id += 1
+
+
+# cursor = connection.cursor()
+# try:
+#     cursor.execute(
+#         "TRUNCATE TABLE drops;")
+# except:
+#     print("deleted the table")
+
+# connection.commit()
+
+
+# print(id, photo, phrase, frame, potential_owner)
+
+
+e = pd.read_sql(
+    "select * from drops", connection)
+l = e.to_dict('records')
+print(e)

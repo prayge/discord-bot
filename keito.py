@@ -503,106 +503,6 @@ async def drop(ctx):
         print(f"saved to database with no owner")
 
 
-@ bot.command(name="droptest", aliases=['dt'])
-@ commands.cooldown(1, 60, commands.BucketType.user)
-async def droptest(ctx):
-
-    no_link_df = pd.read_sql(
-        "select phrase from phrases where username = 'Keito' ", connection)
-    no_links = no_link_df[~no_link_df['phrase'].str.contains("http")]
-    phrases = no_links.to_dict('list')["phrase"]
-
-    # randoms
-    photo = random.choice(os.listdir("pics"))
-    frame = random.choice(os.listdir("frames"))
-    phrase = random.choice(phrases)
-    old_phrase = phrase
-    id = 1  # temp
-    potential_owner = ctx.author.id
-    print(id, photo, phrase, frame, potential_owner)
-
-    drops = pd.read_sql(
-        "select * from drops ", connection)
-    drop = drops.to_dict('records')
-    print(drops)
-
-    letters_and_digits = string.ascii_letters + string.digits
-    cardid = ''.join((random.choice(letters_and_digits)
-                      for i in range(5))).upper()
-    print(cardid)
-
-    for elem in drop:
-        if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:
-            id += 1
-
-    print(id, photo, phrase, frame, potential_owner)
-
-    if len(phrase) > 22:
-        spaces = [i for i, char in enumerate(
-            phrase) if char in string.whitespace]
-        print(spaces)
-        index = int(len(spaces)/2)
-        print(index)
-
-        phrase = phrase[:spaces[index]] + "\n" + phrase[spaces[index] + 1:]
-
-    im = Image.open("pics/" + photo)
-    im2 = Image.open("frames/" + frame)
-
-    im.paste(im2, (0, 0), im2)
-    font_fam = "lib/fonts/impact.ttf"
-    font = ImageFont.truetype(font_fam, 45)  # load font
-    cardid_font = ImageFont.truetype(font_fam, 25)  # load font
-
-    draw = ImageDraw.Draw(im)
-
-    w, h = im.size
-
-    # edition and cardid
-    draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
-    draw.text((140, 10), cardid, (255, 255, 255), font=cardid_font)
-
-    if "\n" in phrase:
-        draw.multiline_text((w/2, 720), f"{phrase}",
-                            (0, 0, 0), font=font, align='center', anchor="ma")
-    else:
-        draw.multiline_text((w/2, 750), f"{phrase}",
-                            (0, 0, 0), font=font, align='center', anchor="ma")
-    print("saving")
-
-    with io.BytesIO() as output:
-        rgb_im = im.convert('RGB')
-        rgb_im.save(output, format="JPEG")
-        contents = output.getvalue()
-        newc = contents.getbuffer().tobytes()
-
-    # cursor.execute("""
-    #             INSERT INTO images(imagename, imagebytes) VALUES(%s, %s)
-    #             """, (cardid, imagebytes))
-    # connection.commit()
-
-    image_message = await ctx.send(file=discord.File(newc))
-    url = image_message.attachments[0].url
-    if os.path.exists(f"{cardid}.png"):
-        os.remove(f"{cardid}.png")
-
-    confirm = await DropConfirm(f'Do you want to add this special keito to your collection?').prompt(ctx)
-    print(confirm)
-    if confirm == 1:
-        cursor.execute("""
-            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
-            """, (id, photo, old_phrase, frame, potential_owner, cardid, url))
-        connection.commit()
-        await ctx.send(f"{ctx.author.username}, Saved this keito to your collection!")
-        print(f"saved to database with owner {potential_owner}")
-    if confirm == 0 or confirm is None:
-        cursor.execute("""
-            INSERT INTO drops(id, photo, phrase, frame, cardid, url) VALUES(%s, %s, %s, %s, %s, %s)
-            """, (id, photo, old_phrase, frame, cardid, url))
-        connection.commit()
-        print(f"saved to database with no owner")
-
-
 @ bot.command(name="collection", aliases=['c'])
 async def collection(ctx):
     drops = pd.read_sql(
@@ -661,6 +561,22 @@ async def view(ctx, message: str):
 async def view_message_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(f"{ctx.author.mention}, You forgot to add a card to view, please add a card ID.")
+
+
+@ bot.command(name="give", aliases=['g'])
+async def give(ctx, message: str):
+    card_dict = pd.read_sql(
+        f"select * from drops where cardid = '{message}'", connection)
+    cards = card_dict.to_dict('records')
+    card = cards[0]
+
+    await ctx.channel.send(card)
+
+
+@ bot.command(name="trade", aliases=['t'])
+async def trade(ctx):
+    author = ctx.author.name
+    await ctx.send(f"{author}, fuck off hes not ready")
 
 
 @ bot.command(name="use", aliases=['u'])

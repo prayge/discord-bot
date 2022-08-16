@@ -33,16 +33,18 @@ except:
 ##############################  CREATE TABLE #############################
 
 # cursor = connection.cursor()
-# try:
-#     cursor.execute(
-#         "CREATE TABLE drops (id INT, photo varchar, phrase varchar, frame varchar);")
-# except:
-#     print("I can't drop our test database!")
+
+# cursor.execute(
+#     """CREATE TABLE images
+#     (id SERIAL PRIMARY KEY,
+#     imagename varchar,
+#     imagebytes varchar);""")
+
 
 # connection.commit()
 
 # only_ethan = pd.read_sql(
-#     "select * from drops ", connection)
+#     "select * from images ", connection)
 # print(only_ethan)
 
 # connection.commit()
@@ -65,14 +67,14 @@ except:
 
 ##############################  DROP COLUMN #############################
 
-cursor = connection.cursor()
-try:
-    cursor.execute(
-        "ALTER TABLE drops ADD COLUMN url varchar;")
-    print("added")
-except:
-    print("I can't drop !")
-connection.commit()
+# cursor = connection.cursor()
+# try:
+#     cursor.execute(
+#         "ALTER TABLE drops ADD COLUMN url varchar;")
+#     print("added")
+# except:
+#     print("I can't drop !")
+# connection.commit()
 
 # only_ethan = pd.read_sql(
 #     "select * from phrases where username = 'Keito'", connection)
@@ -125,6 +127,6 @@ connection.commit()
 
 
 e = pd.read_sql(
-    "select * from drops", connection)
+    "select * from images", connection)
 l = e.to_dict('records')
 print(e)

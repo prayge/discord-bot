@@ -47,13 +47,13 @@ cursor = connection.cursor()
 
 class PaginationListPhrases(menus.ListPageSource):
     def __init__(self, data, username):
-        super().__init__(data, per_page=4)
+        super().__init__(data, per_page=10)
         self.username = username
 
     async def format_page(self, menu, phrases):
 
         embed = discord.Embed(title=f"{self.username}'s Phrases",
-                              description=f"number of images for this loser: {len(phrases)}")
+                              description=f"{self.username}")
         offset = menu.current_page * self.per_page
         lines = '\n'.join(f'ID: {elem[2]}, {elem[0]}' for _,
                           elem in enumerate(phrases, start=offset))
@@ -410,7 +410,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 1, commands.BucketType.user)
+@ commands.cooldown(1, 60, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -488,7 +488,7 @@ async def drop(ctx):
             INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
             """, (id, photo, old_phrase, frame, potential_owner, cardid, url))
         connection.commit()
-        await ctx.send("Saved this keito to your collection!")
+        await ctx.send(f"{ctx.author.username}, Saved this keito to your collection!")
         print(f"saved to database with owner {potential_owner}")
     if confirm == 0 or confirm is None:
         cursor.execute("""

@@ -127,6 +127,6 @@ except:
 
 
 e = pd.read_sql(
-    "select * from images", connection)
+    "select * from drops", connection)
 l = e.to_dict('records')
 print(e)

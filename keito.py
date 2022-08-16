@@ -15,14 +15,17 @@ import random
 import discord
 import pickle
 import psycopg2 as pg
-import pandas as pd
 import time
 from PIL import Image, ImageFont, ImageDraw
 import io
 import string
+import pandas as pd
+import warnings
+warnings.simplefilter(action='ignore', category=UserWarning)
+# dwd
+
 
 start = time.time()
-
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 HOST = os.getenv('HOST')
@@ -146,6 +149,34 @@ class Confirm(menus.Menu):
     def __init__(self, msg):
         super().__init__(timeout=30.0, delete_message_after=True)
         self.msg = msg
+        self.result = None
+
+    async def interaction_check(self, interaction):
+        return interaction.user == self.ctx.author
+
+    async def send_initial_message(self, ctx, channel):
+        return await channel.send(self.msg)
+
+    @ menus.button('\N{WHITE HEAVY CHECK MARK}')
+    async def do_confirm(self, payload):
+        self.result = True
+        self.stop()
+
+    @ menus.button('\N{CROSS MARK}')
+    async def do_deny(self, payload):
+        self.result = False
+        self.stop()
+
+    async def prompt(self, ctx):
+        await self.start(ctx, wait=True)
+        return self.result
+
+
+class GiveConfirm(menus.Menu):
+    def __init__(self, msg):
+        super().__init__(timeout=30.0, delete_message_after=True)
+        self.msg = msg
+
         self.result = None
 
     async def interaction_check(self, interaction):
@@ -411,7 +442,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 60, commands.BucketType.user)
+@ commands.cooldown(1, 1, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -493,7 +524,7 @@ async def drop(ctx):
             INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
             """, (id, photo, old_phrase, frame, potential_owner, cardid, url))
         connection.commit()
-        await ctx.send(f"{ctx.author.username}, Saved this keito to your collection!")
+        await ctx.send(f"{ctx.author.mention}, Saved this keito to your collection!")
         print(f"saved to database with owner {potential_owner}")
     if confirm == 0 or confirm is None:
         cursor.execute("""
@@ -512,7 +543,6 @@ async def collection(ctx):
     owner = ctx.author.id
     user_cards = []
     for d in drop:
-        print(d["owner"], owner)
         if d["owner"] is not None:
             if int(d["owner"]) == int(owner):
                 user_cards.append([d["id"], d["phrase"], d["cardid"]])
@@ -520,6 +550,8 @@ async def collection(ctx):
     pages = MyMenuPages(source=PaginationCardCollection(
         user_cards, ctx), clear_reactions_after=True)
     await pages.start(ctx)
+
+    # refactor sql to only select card information where username = me
 
 
 @ collection.error
@@ -563,20 +595,64 @@ async def view_message_error(ctx, error):
         await ctx.send(f"{ctx.author.mention}, You forgot to add a card to view, please add a card ID.")
 
 
-@ bot.command(name="give", aliases=['g'])
+@ bot.command(name="give")
 async def give(ctx, message: str):
+
     card_dict = pd.read_sql(
         f"select * from drops where cardid = '{message}'", connection)
     cards = card_dict.to_dict('records')
     card = cards[0]
 
-    await ctx.channel.send(card)
+    sender_id = int(ctx.author.id)
+    content = ctx.message.content
+    mention_id = int(ctx.message.mentions[0].id)
+    card_owner_id = int(card["owner"])
 
+    card_id = content[7:].replace(
+        f'{mention_id}', '').replace("<@>", "").strip()
 
-@ bot.command(name="trade", aliases=['t'])
-async def trade(ctx):
-    author = ctx.author.name
-    await ctx.send(f"{author}, fuck off hes not ready")
+    print(card_id)
+    print(sender_id)
+    print(content)
+    print(mention_id)
+    print(card_owner_id)
+
+    if card_owner_id == sender_id:
+        card_dict = pd.read_sql(
+            f"select * from drops where cardid = '{message}'", connection)
+        cards = card_dict.to_dict('records')
+        card = cards[0]
+
+        edition = card["id"]
+        phrase = card["phrase"]
+        owner = card["owner"]
+        cardid = card["cardid"]
+        url = card["url"]
+
+        em = discord.Embed(title="Card Details",
+                           description=f"Owned by <@{owner}>")
+        em.add_field(
+            name="Card Details", value=f'\n\n**Edition:** `{edition}` \n**Phrase:** `{phrase}` \n**Card:** `{cardid}`')
+
+        if url is not None:
+            em.set_image(url=url)
+
+        # em add url
+
+        await ctx.channel.send(embed=em)
+        confirm = await DropConfirm(f'<@{sender_id}>, Do you want to give this card to <@{mention_id}>').prompt(ctx)
+        if confirm == 1:
+            cursor.execute(
+                f"UPDATE drops SET owner = '{mention_id}' where cardid = '{card_id}';", ())
+            connection.commit()
+            await ctx.send(f"{ctx.author.mention}, You have successfuly given card `{card_id}` to <@{mention_id}>")
+
+        if confirm == 0:
+
+            await ctx.send(f"{ctx.author.mention}, Card give not accepted for `{card_id}`")
+    else:
+        await ctx.channel.send("You dont own this card")
+        print("i dont own it")
 
 
 @ bot.command(name="use", aliases=['u'])

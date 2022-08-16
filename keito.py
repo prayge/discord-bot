@@ -420,8 +420,8 @@ async def drop(ctx):
     phrases = no_links.to_dict('list')["phrase"]
 
     # randoms
-    photo = random.choice(os.listdir("pics"))
-    frame = random.choice(os.listdir("frames"))
+    photo = random.choice(os.listdir("lib/pics"))
+    frame = random.choice(os.listdir("lib/frames"))
     phrase = random.choice(phrases)
     old_phrase = phrase
     id = 1  # temp
@@ -454,13 +454,14 @@ async def drop(ctx):
         phrase = phrase[:spaces[index]] + "\n" + phrase[spaces[index] + 1:]
 
     print("opening")
-    im = Image.open("pics/" + photo)
-    im2 = Image.open("frames/" + frame)
+    im = Image.open("lib/pics/" + photo)
+    im2 = Image.open("lib/frames/" + frame)
 
     print("drawing")
     im.paste(im2, (0, 0), im2)
-    font = ImageFont.truetype("impact.ttf", 45)  # load font
-    cardid_font = ImageFont.truetype("impact.ttf", 25)  # load font
+    font_fam = "lib/fonts/impact.ttf"
+    font = ImageFont.truetype(font_fam, 45)  # load font
+    cardid_font = ImageFont.truetype(font_fam, 25)  # load font
 
     draw = ImageDraw.Draw(im)
 
@@ -549,8 +550,9 @@ async def droptest(ctx):
     im2 = Image.open("frames/" + frame)
 
     im.paste(im2, (0, 0), im2)
-    font = ImageFont.truetype("impact.ttf", 45)  # load font
-    cardid_font = ImageFont.truetype("impact.ttf", 25)  # load font
+    font_fam = "lib/fonts/impact.ttf"
+    font = ImageFont.truetype(font_fam, 45)  # load font
+    cardid_font = ImageFont.truetype(font_fam, 25)  # load font
 
     draw = ImageDraw.Draw(im)
 

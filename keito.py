@@ -667,12 +667,12 @@ async def inventory(ctx):
     await ctx.send(f"{author}, fuck off hes not ready")
 
 
-# @ drop.error
-# async def drop_cooldown_error(ctx, error):
-#     if isinstance(error, commands.CommandOnCooldown):
-#         secs = time.strftime("%M minute and %S seconds",
-#                              time.gmtime(error.retry_after))
-#         await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
+@ drop.error
+async def drop_cooldown_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        secs = time.strftime("%M minute and %S seconds",
+                             time.gmtime(error.retry_after))
+        await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
 
 bot.remove_command('help')
 
@@ -684,25 +684,27 @@ async def help(ctx):
     em.add_field(
         name="keito", value=f'Returns the user with a quote by keito or an image of the lovely boy  e.g. "itskeito"', inline=False)
     em.add_field(
-        name="quote", value=f'Returns the user with a quote by user mentioned in the message, e.g. "itsquote Patryk",', inline=False)
+        name="quote", value=f'Returns the user with a quote by user mentioned in the message, e.g. "itsquote Patryk"', inline=False)
     em.add_field(
-        name="add", value=f'Adds a quote for a specified user e.g. "itsadd !p <THE QUOTE> !u <THE USER>",', inline=False)
+        name="add", value=f'Adds a quote for a specified user e.g. "itsadd !p <THE QUOTE> !u <THE USER>"', inline=False)
     em.add_field(
-        name="delete", value=f'deletes a quote for a specified ID e.g. "itsdelete !id <QUOTE ID>",', inline=False)
+        name="delete", value=f'deletes a quote for a specified ID e.g. "itsdelete !id <QUOTE ID>"', inline=False)
     em.add_field(
-        name="list", value=f'Lists the quotes (NOT IMAGE LINKS) for a user e.g. "itslist <USERNAME>",', inline=False)
+        name="list", value=f'Lists the quotes (NOT IMAGE LINKS) for a user e.g. "itslist <USERNAME>"', inline=False)
     em.add_field(
-        name="links", value=f'Lists the IMAGE LINKS for a user e.g. "itslinks <USERNAME>",', inline=False)
+        name="links", value=f'Lists the IMAGE LINKS for a user e.g. "itslinks <USERNAME>"', inline=False)
     em.add_field(
         name="users", value=f'Lists all users with a quote e.g. "itsusers",', inline=False)
     em.add_field(
-        name="images", value=f'Creates an embed with images of user e.g. "itsimages <USERNAME>",', inline=False)
+        name="images", value=f'Creates an embed with images of user e.g. "itsimages <USERNAME>"', inline=False)
     em.add_field(
-        name="drop", value=f'Drops a keito e.g. "itsdrop",', inline=False)
+        name="drop", value=f'Drops a keito e.g. "itsdrop"', inline=False)
     em.add_field(
-        name="collection", value=f'Displays all cards associated with user e.g. "itscollection",', inline=False)
+        name="collection", value=f'Displays all cards associated with user e.g. "itscollection"', inline=False)
     em.add_field(
-        name="view", value=f'Displays card and information with associated card in message e.g. "itsview <CARD ID>",', inline=False)
+        name="view", value=f'Displays card and information with associated card in message e.g. "itsview <CARD ID>"', inline=False)
+    em.add_field(
+        name="give", value=f'Give a card to a user e.g. "itsgive <CARD ID> <USER @, use the @ please>. Example "itsgive GF2FS @mordingo"', inline=False)
 
     await ctx.channel.send(embed=em)
 

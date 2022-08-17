@@ -80,10 +80,10 @@ class PaginationCardCollection(menus.ListPageSource):
     async def format_page(self, menu, phrases):
 
         embed = discord.Embed(
-            title=f"{self.username.author.name}'s Colleciton")
+            title=f"{self.username}'s Colleciton")
         offset = menu.current_page * self.per_page
 
-        edition_space_count = 5
+        edition_space_count = 2
         phrase_space_count = 41
         card_space_count = 5
 
@@ -172,7 +172,7 @@ class Confirm(menus.Menu):
         return self.result
 
 
-class GiveConfirm(menus.Menu):
+class BigDropConfirm(menus.Menu):
     def __init__(self, msg):
         super().__init__(timeout=30.0, delete_message_after=True)
         self.msg = msg
@@ -185,14 +185,19 @@ class GiveConfirm(menus.Menu):
     async def send_initial_message(self, ctx, channel):
         return await channel.send(self.msg)
 
-    @ menus.button('\N{WHITE HEAVY CHECK MARK}')
-    async def do_confirm(self, payload):
-        self.result = True
+    @ menus.button('1\uFE0F\u20E3')
+    async def do_1(self, payload):
+        self.result = 1
         self.stop()
 
-    @ menus.button('\N{CROSS MARK}')
-    async def do_deny(self, payload):
-        self.result = False
+    @ menus.button('2\uFE0F\u20E3')
+    async def do_2(self, payload):
+        self.result = 2
+        self.stop()
+
+    @ menus.button('3\uFE0F\u20E3')
+    async def do_3(self, payload):
+        self.result = 3
         self.stop()
 
     async def prompt(self, ctx):
@@ -534,21 +539,179 @@ async def drop(ctx):
         print(f"saved to database with no owner")
 
 
+@ bot.command(name="bigdrop", aliases=['bd'])
+@ commands.cooldown(1, 30, commands.BucketType.user)
+async def bigdrop(ctx):
+
+    no_link_df = pd.read_sql(
+        "select phrase from phrases where username = 'Keito' ", connection)
+    no_links = no_link_df[~no_link_df['phrase'].str.contains("http")]
+    phrases = no_links.to_dict('list')["phrase"]
+
+    im1, im1card = card_gen(phrases, ctx)
+    im2, im2card = card_gen(phrases, ctx)
+    im3, im3card = card_gen(phrases, ctx)
+
+    bg = Image.open("lib/etc/trans.png")
+    bw, bh = bg.size
+    print(bw, bh)
+    bg.paste(im1, (0, 0), im1)
+    bg.paste(im2, (int(600+100), 0), im2)
+    bg.paste(im3, (int(600+600+200), 0), im3)
+    bg.save(f"test.png")
+    image_message = await ctx.send(file=discord.File(f'test.png'))
+    url = image_message.attachments[0].url
+    if os.path.exists(f"test.png"):
+        os.remove(f"test.png")
+
+    confirm = await BigDropConfirm("Which card do you want?").prompt(ctx)
+    print(confirm)
+    if confirm == 1:
+        cardid = im1card["cardid"]
+        im1.save(f"test.png")
+        image_message = await ctx.send(file=discord.File(f'test.png'))
+        url = image_message.attachments[0].url
+        if os.path.exists(f"test.png"):
+            os.remove(f"test.png")
+        cursor.execute("""
+            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
+            """, (im1card["id"], im1card["photo"], im1card["phrase"], im1card["frame"], im1card["potential_owner"], im1card["cardid"], url))
+        connection.commit()
+        await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
+        print(im1card)
+
+    elif confirm == 2:
+        cardid = im2card["cardid"]
+        im2.save(f"test.png")
+        image_message = await ctx.send(file=discord.File(f'test.png'))
+        url = image_message.attachments[0].url
+        if os.path.exists(f"test.png"):
+            os.remove(f"test.png")
+        cursor.execute("""
+            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
+            """, (im2card["id"], im2card["photo"], im2card["phrase"], im2card["frame"], im2card["potential_owner"], im2card["cardid"], url))
+        connection.commit()
+        await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
+        print(im2card)
+
+    elif confirm == 3:
+        cardid = im3card["cardid"]
+        im3.save(f"test.png")
+        image_message = await ctx.send(file=discord.File(f'test.png'))
+        url = image_message.attachments[0].url
+        if os.path.exists(f"test.png"):
+            os.remove(f"test.png")
+        cursor.execute("""
+            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
+            """, (im3card["id"], im3card["photo"], im3card["phrase"], im3card["frame"], im3card["potential_owner"], im3card["cardid"], url))
+        connection.commit()
+        await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
+        print(im3card)
+
+    elif confirm is None:
+        print("none")
+
+
+def card_gen(phrases, ctx):
+    # randoms
+    photo = random.choice(os.listdir("lib/pics"))
+    frame = random.choice(os.listdir("lib/frames"))
+    phrase = random.choice(phrases)
+    old_phrase = phrase
+    id = 1  # temp
+    potential_owner = ctx.author.id
+
+    print(id, photo, phrase, frame, potential_owner)
+
+    drops = pd.read_sql(
+        "select * from drops ", connection)
+    drop = drops.to_dict('records')
+    print(drops)
+
+    letters_and_digits = string.ascii_letters + string.digits
+    cardid = ''.join((random.choice(letters_and_digits)
+                      for i in range(5))).upper()
+    print(cardid)
+
+    for elem in drop:
+        if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:
+            id += 1
+
+    print(id, photo, phrase, frame, potential_owner)
+
+    if len(phrase) > 22:
+        spaces = [i for i, char in enumerate(
+            phrase) if char in string.whitespace]
+        print(spaces)
+        index = int(len(spaces)/2)
+        print(index)
+
+        phrase = phrase[:spaces[index]] + "\n" + phrase[spaces[index] + 1:]
+
+    print("opening")
+    im = Image.open("lib/pics/" + photo)
+    im2 = Image.open("lib/frames/" + frame)
+
+    print("drawing")
+    im.paste(im2, (0, 0), im2)
+    font_fam = "lib/fonts/impact.ttf"
+    font = ImageFont.truetype(font_fam, 45)  # load font
+
+    draw = ImageDraw.Draw(im)
+
+    w, h = im.size
+
+    # edition and cardid
+    print("adding text")
+    draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
+
+    if "\n" in phrase:
+        draw.multiline_text((w/2, 720), f"{phrase}",
+                            (0, 0, 0), font=font, align='center', anchor="ma")
+    else:
+        draw.multiline_text((w/2, 750), f"{phrase}",
+                            (0, 0, 0), font=font, align='center', anchor="ma")
+    print("saving")
+
+    card = {
+        "id": id,
+        "photo": photo,
+        "phrase": phrase,
+        "frame": frame,
+        "potential_owner": potential_owner,
+        "cardid": cardid
+    }
+
+    # cursor.execute("""
+    #         INSERT INTO drops(id, photo, phrase, frame) VALUES(%s, %s, %s, %s)
+    #         """, (id, photo, old_phrase, frame))
+    # connection.commit()
+    # print(f"added {(id, photo, old_phrase, frame)} to db")
+
+    return im, card
+
+
 @ bot.command(name="collection", aliases=['c'])
-async def collection(ctx):
+async def collection(ctx, *, member: discord.Member = None):
+    if member is None:
+        owner = ctx.message.author.name
+        owner_id = ctx.message.author.id
+    else:
+        owner = member.name
+        owner_id = member.id
+
     drops = pd.read_sql(
         "select * from drops ", connection)
     drop = drops.to_dict('records')
 
-    owner = ctx.author.id
     user_cards = []
     for d in drop:
         if d["owner"] is not None:
-            if int(d["owner"]) == int(owner):
+            if int(d["owner"]) == int(owner_id):
                 user_cards.append([d["id"], d["phrase"], d["cardid"]])
 
     pages = MyMenuPages(source=PaginationCardCollection(
-        user_cards, ctx), clear_reactions_after=True)
+        user_cards, owner), clear_reactions_after=True)
     await pages.start(ctx)
 
     # refactor sql to only select card information where username = me

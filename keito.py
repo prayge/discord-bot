@@ -119,9 +119,6 @@ class ImageListPagination(menus.GroupByPageSource):
         )
 
     async def format_page(self, menu, entry):
-        print(entry)
-        print(type(entry))
-
         entry_dict = entry[0]
         id = entry_dict["id"]
         phrase = entry_dict["phrase"]
@@ -257,7 +254,6 @@ async def quote(ctx, *, message: str):
     list_usernames = list_df["username"]
     usernames = ", ".join(list_usernames)
     if query in list_usernames:
-        print("Works for this username")
         df_dict = pd.read_sql(
             f"select * from phrases where username = '{query}'", connection)
         json_print = df_dict.to_dict(orient='records')
@@ -299,7 +295,6 @@ async def add(ctx, *, message: str):
 
         await ctx.send(f"Added phrase: {phrase} and username: {user} to database")
         connection.commit()
-        print(f"added to db phrase: {phrase} and user: {user} ")
     except:
         await ctx.send("Add command formated incorrectly. please use '$add !p <phrase> !u <username> ")
 
@@ -310,8 +305,6 @@ async def delete(ctx, *, message: str):
     try:
         id_index = message.index("!id")
         id = int(message[id_index+3:].strip())
-        print(id)
-
         ids_df = pd.read_sql(
             "select id, phrase from phrases", connection)
         phrase_select = pd.read_sql(
@@ -325,14 +318,11 @@ async def delete(ctx, *, message: str):
         confirm = await Confirm(f'Delete phrase: {phrase}?').prompt(ctx)
         if confirm:
             if sorted_ids.__contains__(id):
-                print(f"{id} is in database")
                 await ctx.send(f"Deleted {id}, which has phrase: {phrase} in database")
                 cursor.execute(
                     f"DELETE FROM phrases where id = {id}")
-                print(f"deleted  {phrase} @ id {id}")
             else:
                 await ctx.send(f"{id} doesnt exist in database, try again.")
-                print(f"{id} not in database")
 
         connection.commit()
     except:
@@ -419,7 +409,6 @@ async def draw(ctx, message: str):
 
     if "http" in message:
         try:
-            print(message)
             url = message
             response = requests.get(url)
 
@@ -447,7 +436,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 30, commands.BucketType.user)
+@ commands.cooldown(1, 60, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -461,7 +450,6 @@ async def drop(ctx):
 
     bg = Image.open("lib/etc/trans.png")
     bw, bh = bg.size
-    print(bw, bh)
     bg.paste(im1, (0, 0), im1)
     bg.paste(im2, (int(600+100), 0), im2)
     bg.paste(im3, (int(600+600+200), 0), im3)
@@ -472,51 +460,29 @@ async def drop(ctx):
         os.remove(f"test.png")
 
     confirm = await BigDropConfirm("Which card do you want?").prompt(ctx)
-    print(confirm)
     if confirm == 1:
-        cardid = im1card["cardid"]
-        im1.save(f"test.png")
-        image_message = await ctx.send(file=discord.File(f'test.png'))
-        url = image_message.attachments[0].url
-        if os.path.exists(f"test.png"):
-            os.remove(f"test.png")
-        cursor.execute("""
-            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
-            """, (im1card["id"], im1card["photo"], im1card["phrase"], im1card["frame"], im1card["potential_owner"], im1card["cardid"], url))
-        connection.commit()
-        await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
-        print(im1card)
-
+        await print_card(im1, im1card, ctx)
     elif confirm == 2:
-        cardid = im2card["cardid"]
-        im2.save(f"test.png")
-        image_message = await ctx.send(file=discord.File(f'test.png'))
-        url = image_message.attachments[0].url
-        if os.path.exists(f"test.png"):
-            os.remove(f"test.png")
-        cursor.execute("""
-            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
-            """, (im2card["id"], im2card["photo"], im2card["phrase"], im2card["frame"], im2card["potential_owner"], im2card["cardid"], url))
-        connection.commit()
-        await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
-        print(im2card)
-
+        await print_card(im2, im2card, ctx)
     elif confirm == 3:
-        cardid = im3card["cardid"]
-        im3.save(f"test.png")
-        image_message = await ctx.send(file=discord.File(f'test.png'))
-        url = image_message.attachments[0].url
-        if os.path.exists(f"test.png"):
-            os.remove(f"test.png")
-        cursor.execute("""
-            INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
-            """, (im3card["id"], im3card["photo"], im3card["phrase"], im3card["frame"], im3card["potential_owner"], im3card["cardid"], url))
-        connection.commit()
-        await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
-        print(im3card)
-
+        await print_card(im3, im3card, ctx)
     elif confirm is None:
         print("none")
+
+
+async def print_card(card, carddict, ctx):
+    cardid = carddict["cardid"]
+    card.save(f"test.png")
+    print("ee")
+    image_message = await ctx.send(file=discord.File(f'test.png'))
+    url = image_message.attachments[0].url
+    if os.path.exists(f"test.png"):
+        os.remove(f"test.png")
+    cursor.execute("""
+        INSERT INTO drops(id, photo, phrase, frame, owner, cardid, url) VALUES(%s, %s, %s, %s, %s, %s, %s)
+        """, (carddict["id"], carddict["photo"], carddict["phrase"], carddict["frame"], carddict["potential_owner"], carddict["cardid"], url))
+    connection.commit()
+    await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
 
 
 def card_gen(phrases, ctx):
@@ -528,38 +494,28 @@ def card_gen(phrases, ctx):
     id = 1  # temp
     potential_owner = ctx.author.id
 
-    print(id, photo, phrase, frame, potential_owner)
-
     drops = pd.read_sql(
         "select * from drops ", connection)
     drop = drops.to_dict('records')
-    print(drops)
 
     letters_and_digits = string.ascii_letters + string.digits
     cardid = ''.join((random.choice(letters_and_digits)
                       for i in range(5))).upper()
-    print(cardid)
 
     for elem in drop:
         if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:
             id += 1
 
-    print(id, photo, phrase, frame, potential_owner)
-
     if len(phrase) > 22:
         spaces = [i for i, char in enumerate(
             phrase) if char in string.whitespace]
-        print(spaces)
         index = int(len(spaces)/2)
-        print(index)
 
         phrase = phrase[:spaces[index]] + "\n" + phrase[spaces[index] + 1:]
 
-    print("opening")
     im = Image.open("lib/pics/" + photo)
     im2 = Image.open("lib/frames/" + frame)
 
-    print("drawing")
     im.paste(im2, (0, 0), im2)
     font_fam = "lib/fonts/impact.ttf"
     font = ImageFont.truetype(font_fam, 45)  # load font
@@ -569,7 +525,6 @@ def card_gen(phrases, ctx):
     w, h = im.size
 
     # edition and cardid
-    print("adding text")
     draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
 
     if "\n" in phrase:
@@ -578,7 +533,6 @@ def card_gen(phrases, ctx):
     else:
         draw.multiline_text((w/2, 750), f"{phrase}",
                             (0, 0, 0), font=font, align='center', anchor="ma")
-    print("saving")
 
     card = {
         "id": id,
@@ -681,12 +635,6 @@ async def give(ctx, message: str):
     card_id = content[7:].replace(
         f'{mention_id}', '').replace("<@>", "").strip()
 
-    print(card_id)
-    print(sender_id)
-    print(content)
-    print(mention_id)
-    print(card_owner_id)
-
     if card_owner_id == sender_id:
         card_dict = pd.read_sql(
             f"select * from drops where cardid = '{message}'", connection)
@@ -722,7 +670,6 @@ async def give(ctx, message: str):
             await ctx.send(f"{ctx.author.mention}, Card give not accepted for `{card_id}`")
     else:
         await ctx.channel.send("You dont own this card")
-        print("i dont own it")
 
 
 @ bot.command(name="use", aliases=['u'])
@@ -785,7 +732,6 @@ async def help(ctx):
 @ list.error
 @ users.error
 async def send_error(ctx, error):
-    print(type(error))
     await ctx.send(error)
 
 bot.run(TOKEN)

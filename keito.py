@@ -436,7 +436,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 60, commands.BucketType.user)
+@ commands.cooldown(1, 120, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(

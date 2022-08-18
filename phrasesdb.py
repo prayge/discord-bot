@@ -117,18 +117,27 @@ except:
 # cursor = connection.cursor()
 # try:
 #     cursor.execute(
-#         "TRUNCATE TABLE drops;")
+#         "TRUNCATE TABLE dwadwadwaga;")
 # except:
 #     print("deleted the table")
 
 # connection.commit()
 
+##############################  TABLE CHECK #############################
 
-# print(id, photo, phrase, frame, potential_owner)
+# t = pd.read_sql(
+#     "SELECT * FROM INFORMATION_SCHEMA.tables where table_schema = 'public';", connection)
+# print(t)
 
 
-e = pd.read_sql(
-    "select * from drops", connection)
-l = e.to_dict('list')["cardid"]
+e = pd.read_sql(" select * from phrases", connection)
+l = e.to_dict('list')["phrase"]
 
-print(e)
+r = []
+for f in l:
+    if "http" not in f:
+        r.append(f)
+
+rr = sorted(r, key=len)
+
+[print(ee) for ee in rr]

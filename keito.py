@@ -354,9 +354,14 @@ async def list(ctx, message: str):
             await pages.start(ctx)
 
         except:
-            await ctx.send("Username doesnt exist, did you type it correctly? check current list of users with '$users' ")
+            await ctx.send("List may be compiled of images, please use 'itsimages' for the user instead.")
     else:
         await ctx.send(f"Username {message} not in list of usernames")
+
+
+@ bot.command(name="test")
+async def test(ctx):
+    await ctx.send('forgor \U0001f480')
 
 
 @ bot.command(name="links")
@@ -503,6 +508,7 @@ def card_gen(phrases, ctx):
     # randoms
     photo = random.choice(os.listdir("lib/pics"))
     frame = random.choice(os.listdir("lib/frames"))
+    # phrase = "I'm out here with somebody's daughter she's calling me father"
     phrase = random.choice(phrases)
     old_phrase = phrase
     id = 1  # temp
@@ -517,6 +523,10 @@ def card_gen(phrases, ctx):
     for elem in drop:
         if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:
             id += 1
+    font_fam = "lib/fonts/impact.ttf"
+    font = ImageFont.truetype(font_fam, 45)  # load font
+    editionfont = ImageFont.truetype(font_fam, 35)
+    cardid_font = ImageFont.truetype(font_fam, 25)  # load font
 
     if len(phrase) > 22:
         spaces = [i for i, char in enumerate(
@@ -525,20 +535,21 @@ def card_gen(phrases, ctx):
 
         phrase = phrase[:spaces[index]] + "\n" + phrase[spaces[index] + 1:]
 
+    if len(phrase) > 43:
+
+        font = ImageFont.truetype(font_fam, 35)
+
     im = Image.open("lib/pics/" + photo)
     im2 = Image.open("lib/frames/" + frame)
 
     im.paste(im2, (0, 0), im2)
-    font_fam = "lib/fonts/impact.ttf"
-    font = ImageFont.truetype(font_fam, 45)  # load font
-    cardid_font = ImageFont.truetype(font_fam, 25)  # load font
 
     draw = ImageDraw.Draw(im)
 
     w, h = im.size
 
     # edition and cardid
-    draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
+    draw.text((420, 855), f"{id}", (255, 255, 255), font=editionfont)
     draw.text((140, 10), cardid, (255, 255, 255), font=cardid_font)
     draw.rectangle(((40, 202), (565, 696)), outline=(0, 0, 0), width=4)
     draw.rectangle(((0, 0), (600, 900)), outline=(0, 0, 0), width=4)

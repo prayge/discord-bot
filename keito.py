@@ -436,7 +436,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 120, commands.BucketType.user)
+@ commands.cooldown(1, 1, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -528,6 +528,8 @@ def card_gen(phrases, ctx):
     # edition and cardid
     draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
     draw.text((140, 10), cardid, (255, 255, 255), font=cardid_font)
+    draw.rectangle(((40, 202), (565, 696)), outline=(0, 0, 0), width=4)
+    draw.rectangle(((0, 0), (600, 900)), outline=(0, 0, 0), width=4)
 
     if "\n" in phrase:
         draw.multiline_text((w/2, 720), f"{phrase}",

@@ -436,7 +436,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 1, commands.BucketType.user)
+@ commands.cooldown(1, 60, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -473,7 +473,6 @@ async def drop(ctx):
 async def print_card(card, carddict, ctx):
     cardid = carddict["cardid"]
     card.save(f"test.png")
-    print("ee")
     image_message = await ctx.send(file=discord.File(f'test.png'))
     url = image_message.attachments[0].url
     if os.path.exists(f"test.png"):
@@ -483,6 +482,21 @@ async def print_card(card, carddict, ctx):
         """, (carddict["id"], carddict["photo"], carddict["phrase"], carddict["frame"], carddict["potential_owner"], carddict["cardid"], url))
     connection.commit()
     await ctx.send(f"{ctx.author.mention}, Saved `{cardid}` to your collection!")
+
+
+def get_cardid():
+    letters_and_digits = string.ascii_letters + string.digits
+    cardid = ''.join((random.choice(letters_and_digits)
+                      for i in range(5))).upper()
+
+    e = pd.read_sql(
+        "select cardid from drops", connection)
+    l = e.to_dict('list')["cardid"]
+
+    if cardid in l:
+        get_cardid()
+    else:
+        return cardid
 
 
 def card_gen(phrases, ctx):
@@ -498,9 +512,7 @@ def card_gen(phrases, ctx):
         "select * from drops ", connection)
     drop = drops.to_dict('records')
 
-    letters_and_digits = string.ascii_letters + string.digits
-    cardid = ''.join((random.choice(letters_and_digits)
-                      for i in range(5))).upper()
+    cardid = get_cardid()
 
     for elem in drop:
         if elem["id"] == id and elem["photo"] == photo and elem["phrase"] == phrase:

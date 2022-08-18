@@ -1,3 +1,4 @@
+from collections import Counter
 import string
 import random
 from io import BytesIO
@@ -128,5 +129,6 @@ except:
 
 e = pd.read_sql(
     "select * from drops", connection)
-l = e.to_dict('records')
+l = e.to_dict('list')["cardid"]
+
 print(e)

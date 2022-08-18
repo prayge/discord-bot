@@ -459,7 +459,7 @@ async def drop(ctx):
     if os.path.exists(f"test.png"):
         os.remove(f"test.png")
 
-    confirm = await BigDropConfirm("Which card do you want?").prompt(ctx)
+    confirm = await BigDropConfirm(f"{ctx.author.mention}, Which card do you want?").prompt(ctx)
     if confirm == 1:
         await print_card(im1, im1card, ctx)
     elif confirm == 2:
@@ -519,6 +519,7 @@ def card_gen(phrases, ctx):
     im.paste(im2, (0, 0), im2)
     font_fam = "lib/fonts/impact.ttf"
     font = ImageFont.truetype(font_fam, 45)  # load font
+    cardid_font = ImageFont.truetype(font_fam, 25)  # load font
 
     draw = ImageDraw.Draw(im)
 
@@ -526,13 +527,14 @@ def card_gen(phrases, ctx):
 
     # edition and cardid
     draw.text((420, 850), f"{id}", (255, 255, 255), font=font)
+    draw.text((140, 10), cardid, (255, 255, 255), font=cardid_font)
 
     if "\n" in phrase:
         draw.multiline_text((w/2, 720), f"{phrase}",
-                            (0, 0, 0), font=font, align='center', anchor="ma")
+                            (255, 255, 255), font=font, align='center', anchor="ma", stroke_width=2, stroke_fill=(0, 0, 0))
     else:
         draw.multiline_text((w/2, 750), f"{phrase}",
-                            (0, 0, 0), font=font, align='center', anchor="ma")
+                            (255, 255, 255), font=font, align='center', anchor="ma", stroke_width=2, stroke_fill=(0, 0, 0))
 
     card = {
         "id": id,

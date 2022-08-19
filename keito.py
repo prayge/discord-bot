@@ -441,7 +441,7 @@ async def draw(ctx, message: str):
 
 
 @ bot.command(name="drop", aliases=['d'])
-@ commands.cooldown(1, 60, commands.BucketType.user)
+@ commands.cooldown(1, 1, commands.BucketType.user)
 async def drop(ctx):
 
     no_link_df = pd.read_sql(
@@ -506,11 +506,22 @@ def get_cardid():
 
 def card_gen(phrases, ctx):
     # randoms
-    photo = random.choice(os.listdir("lib/pics"))
-    frame = random.choice(os.listdir("lib/frames"))
-    # phrase = "I'm out here with somebody's daughter she's calling me father"
+
+    rand = random.randint(1, 2)
+    if rand == 1:
+        photo_path = "lib/pics"
+        frame_path = "lib/frames"
+    else:
+        photo_path = "lib/pat-pics"
+        frame_path = "lib/pat-frames"
+
+    photo = random.choice(os.listdir(photo_path))
+    frame = random.choice(os.listdir(frame_path))
+
+    im = Image.open(f"{photo_path}/{photo}")
+    im2 = Image.open(f"{frame_path}/{frame}")
+
     phrase = random.choice(phrases)
-    old_phrase = phrase
     id = 1  # temp
     potential_owner = ctx.author.id
 
@@ -538,9 +549,6 @@ def card_gen(phrases, ctx):
     if len(phrase) > 43:
 
         font = ImageFont.truetype(font_fam, 35)
-
-    im = Image.open("lib/pics/" + photo)
-    im2 = Image.open("lib/frames/" + frame)
 
     im.paste(im2, (0, 0), im2)
 
@@ -711,12 +719,12 @@ async def inventory(ctx):
     await ctx.send(f"{author}, fuck off hes not ready")
 
 
-@ drop.error
-async def drop_cooldown_error(ctx, error):
-    if isinstance(error, commands.CommandOnCooldown):
-        secs = time.strftime("%M minute and %S seconds",
-                             time.gmtime(error.retry_after))
-        await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
+# @ drop.error
+# async def drop_cooldown_error(ctx, error):
+#     if isinstance(error, commands.CommandOnCooldown):
+#         secs = time.strftime("%M minute and %S seconds",
+#                              time.gmtime(error.retry_after))
+#         await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
 
 bot.remove_command('help')
 

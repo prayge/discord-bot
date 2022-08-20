@@ -719,12 +719,12 @@ async def inventory(ctx):
     await ctx.send(f"{author}, fuck off hes not ready")
 
 
-# @ drop.error
-# async def drop_cooldown_error(ctx, error):
-#     if isinstance(error, commands.CommandOnCooldown):
-#         secs = time.strftime("%M minute and %S seconds",
-#                              time.gmtime(error.retry_after))
-#         await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
+@ drop.error
+async def drop_cooldown_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        secs = time.strftime("%M minute and %S seconds",
+                             time.gmtime(error.retry_after))
+        await ctx.send(f"{ctx.author.mention}, Try again in {secs}")
 
 bot.remove_command('help')
 

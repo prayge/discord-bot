@@ -507,13 +507,13 @@ def get_cardid():
 def card_gen(phrases, ctx):
     # randoms
 
-    rand = random.randint(1, 2)
+    rand = random.randint(1, 5)
     if rand == 1:
-        photo_path = "lib/pics"
-        frame_path = "lib/frames"
-    else:
         photo_path = "lib/pat-pics"
         frame_path = "lib/pat-frames"
+    else:
+        photo_path = "lib/pics"
+        frame_path = "lib/frames"
 
     photo = random.choice(os.listdir(photo_path))
     frame = random.choice(os.listdir(frame_path))
